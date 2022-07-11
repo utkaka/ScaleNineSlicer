@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/utkaka/ScaleNineSlicer/compare/v1.0.1...v1.0.2) (2022-07-11)
+
+
+### Bug Fixes
+
+* fix npm ignore ([910a4ad](https://github.com/utkaka/ScaleNineSlicer/commit/910a4ad2c004a76173e4c557916abdec22fa3fab))
+
 ## [1.0.1](https://github.com/utkaka/ScaleNineSlicer/compare/v1.0.0...v1.0.1) (2022-07-11)
 
 

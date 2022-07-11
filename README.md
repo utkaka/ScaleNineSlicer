@@ -33,7 +33,7 @@ You can select textures and/or folders with sprites and perform an action on all
 
 ### Editor window (*Unity 2021.2+*)
 
-If you want a more controlled result there is an editor window.
+If you want a more controlled result there is an editor window *(Window/2D/Sprite Nine Slicer)*.
 
 ![Editor window!](Documentation~/images/sprite-nine-slicer-editor.png "Editor window")
 

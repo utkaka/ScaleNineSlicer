@@ -1,0 +1,16 @@
+{
+  "name": "com.utkaka.scale-nine-slicer",
+  "version": "1.0.0",
+  "displayName": "Scale Nine Slicer",
+  "description": "Template package",
+  "unity": "2019.3",
+  "unityRelease": "1f1",
+  "dependencies": {
+    "com.unity.mathematics": "1.0.0"
+  },
+  "author": {
+    "name": "Anton Alexeyev",
+    "email": "alexeyev.anton@gmail.com"
+  },
+  "license": "MIT"
+}

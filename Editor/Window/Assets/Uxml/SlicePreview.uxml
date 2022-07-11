@@ -1,0 +1,22 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:ScrollView name="Container" mode="VerticalAndHorizontal" class="main-area">
+        <ui:VisualElement name="Area" style="width: 100px; height: 100px;">
+            <ScaleNineSlicer.Editor.TiledImageElement name="ImageBackground" style="width: 100%; height: 100%; background-image: url(&apos;project://database/Assets/SpriteNineSlice/Assets/Sprites/checker.png?fileID=21300000&amp;guid=85f4ca9a37a3147b98a30d7305952ce7&amp;type=3#checker&apos;); position: absolute;">
+                <ui:VisualElement name="Image" style="background-image: none; width: auto; height: auto; flex-grow: 1;" />
+            </ScaleNineSlicer.Editor.TiledImageElement>
+        </ui:VisualElement>
+        <ui:VisualElement class="overlay-window" style="height: 80px;">
+            <ui:VisualElement name="Size" class="unity-base-field unity-composite-field unity-composite-field--multi-line unity-rect-int-field unity-composite-field--two-lines">
+                <ui:Label text="Size" class="unity-text-element unity-label unity-base-field__label unity-composite-field__label unity-rect-int-field__label" style="min-width: 70px; -unity-text-align: upper-center; min-height: 25px;" />
+                <ui:VisualElement class="unity-composite-field__field-group">
+                    <uie:IntegerField name="Width" label="W" class="overlay-window__input" />
+                    <uie:IntegerField name="Height" label="H" class="overlay-window__input" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:Button text="Restore" display-tooltip-when-elided="true" name="Restore" focusable="false" />
+            <ui:VisualElement name="Spacer" style="width: 100%; height: 1px; background-color: rgb(35, 35, 35); margin-top: 2px; margin-bottom: 2px;" />
+            <ui:VisualElement style="flex-grow: 1;" />
+            <ui:Button text="Save as PNG" display-tooltip-when-elided="true" name="Export" focusable="false" />
+        </ui:VisualElement>
+    </ui:ScrollView>
+</ui:UXML>

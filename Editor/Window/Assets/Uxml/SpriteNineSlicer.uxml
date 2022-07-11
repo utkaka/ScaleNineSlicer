@@ -1,0 +1,23 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
+    <Style src="project://database/Assets/SpriteNineSlice/Assets/Uxml/SpriteNineSlicer.uss?fileID=7433441132597879392&amp;guid=ebe5815569ba44fd293aecda111fcb9e&amp;type=3#SpriteNineSlicer" />
+    <Style src="project://database/Assets/SpriteNineSlice/Assets/Uxml/BordersEditor.uss?fileID=7433441132597879392&amp;guid=51a1d79e2859442219d064e07406dbdc&amp;type=3#BordersEditor" />
+    <uie:Toolbar>
+        <uie:ToolbarToggle focusable="false" name="Borders" label="Borders" style="width: 65px;" />
+        <uie:ToolbarToggle focusable="false" name="Preview" label="Preview" style="width: 65px;" />
+        <uie:ToolbarSpacer style="flex-grow: 1;" />
+        <ui:VisualElement style="flex-direction: row;">
+            <ui:Button name="PrevSprite" text="&lt;" display-tooltip-when-elided="true" enable-rich-text="false" focusable="false" />
+            <ui:Label name="CurrentSpriteIndex" text="0/0" display-tooltip-when-elided="true" style="-unity-text-align: middle-center; width: 120px;" />
+            <ui:Button name="NextSprite" text="&gt;" display-tooltip-when-elided="true" focusable="false" enable-rich-text="false" />
+        </ui:VisualElement>
+        <uie:ToolbarSpacer style="flex-grow: 1;" />
+        <ui:VisualElement class="trim-toggle" style="flex-direction: row;">
+            <ui:Toggle label="Trim alpha" name="TrimAlpha" class="trim-toggle" tooltip="Trimming works only for single mode sprites"/>
+            <ui:Toggle label="Trim center" name="TrimCenter" class="trim-toggle" tooltip="Trimming works only for single mode sprites"/>
+        </ui:VisualElement>
+        <uie:ToolbarButton focusable="false" name="Revert" text="Revert" display-tooltip-when-elided="true" enable-rich-text="false" />
+        <uie:ToolbarButton focusable="false" name="Apply" text="Apply" display-tooltip-when-elided="true" enable-rich-text="false" />
+    </uie:Toolbar>
+    <ui:VisualElement name="Container" style="flex-grow :1;">
+    </ui:VisualElement>>
+</ui:UXML>

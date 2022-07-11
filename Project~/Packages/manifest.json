@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "com.unity.2d.sprite": "1.0.0",
+    "com.unity.ide.rider": "3.0.13",
+    "com.unity.ide.visualstudio": "2.0.14",
+    "com.unity.ide.vscode": "1.2.5",
+    "com.unity.ugui": "1.0.0",
+    "com.utkaka.scale-nine-slicer": "file:../..",
+    "com.unity.modules.imageconversion": "1.0.0",
+    "com.unity.modules.imgui": "1.0.0",
+    "com.unity.modules.ui": "1.0.0",
+    "com.unity.modules.uielements": "1.0.0"
+  }
+}

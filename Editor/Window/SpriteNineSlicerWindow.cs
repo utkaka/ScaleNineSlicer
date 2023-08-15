@@ -106,6 +106,11 @@ namespace ScaleNineSlicer.Editor {
             base.DiscardChanges();
         }
 
+        private void OnDestroy() {
+            Selection.selectionChanged -= UpdateSelection;
+            _selectedSpriteInfo.BorderChange -= UpdateTrimmedSpriteInfo;
+        }
+
         private void ShowView(ChildView view) {
             _bordersToggle.value = view == ChildView.Borders;
             _previewToggle.value = view == ChildView.Preview;

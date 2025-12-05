@@ -1,0 +1,25 @@
+{
+    "name": "Utkaka.ScaleNineSlicer.Tests.Editor",
+    "rootNamespace": "Utkaka.ScaleNineSlicer.Tests",
+    "references": [
+        "Unity.PerformanceTesting",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "Utkaka.ScaleNineSlicer.UI"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,22 @@
+{
+  "name": "Utkaka.ScaleNineSlicer.Editor.SpriteSlicing.Window",
+  "rootNamespace": "Utkaka.ScaleNineSlicer.Editor",
+  "references": [
+      "GUID:5287ddc07a38244d6979efaf959f4ed4",
+      "GUID:6479a99ba786a4966bc42c4feb384a67",
+      "GUID:d8b63aba1907145bea998dd612889d6b"
+  ],
+  "includePlatforms": [
+      "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [
+      "UNITY_2021_2_OR_NEWER"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

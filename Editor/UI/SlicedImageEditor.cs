@@ -23,6 +23,8 @@ namespace Utkaka.ScaleNineSlicer.Editor.UI
         
         private SerializedProperty _slicedProperty;
         private SerializedProperty _fillCenterProperty;
+        private SerializedProperty _tileScaledSlicesProperty;
+        private SerializedProperty _slicedTileSizeProperty;
         
         private SerializedProperty _tiledProperty;
         private SerializedProperty _tileSizeProperty;
@@ -92,6 +94,8 @@ namespace Utkaka.ScaleNineSlicer.Editor.UI
             
             _slicedProperty = serializedObject.FindProperty("_sliced");
             _fillCenterProperty = serializedObject.FindProperty("_fillCenter");
+            _tileScaledSlicesProperty = serializedObject.FindProperty("_tileScaledSlices");
+            _slicedTileSizeProperty = serializedObject.FindProperty("_slicedTileSize");
             _showSlicedOptions = new AnimBool(_slicedProperty.boolValue);
             _showSlicedOptions.valueChanged.AddListener(Repaint);
             
@@ -199,6 +203,8 @@ namespace Utkaka.ScaleNineSlicer.Editor.UI
             if (EditorGUILayout.BeginFadeGroup(_showSlicedOptions.faded))
             {
                 EditorGUILayout.PropertyField(_fillCenterProperty);
+                EditorGUILayout.PropertyField(_tileScaledSlicesProperty);
+                EditorGUILayout.PropertyField(_slicedTileSizeProperty);
             }
             EditorGUI.indentLevel--;
             EditorGUILayout.EndFadeGroup();

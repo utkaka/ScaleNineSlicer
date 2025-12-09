@@ -127,7 +127,7 @@ namespace Utkaka.ScaleNineSlicer.UI
                 {
                     TileSize.x /= multipliedPixelsPerUnit;
                     TilesCount.x = Mathf.CeilToInt(FullRect.size.x / TileSize.x);
-                    CutRight = TilesCount.x * TileSize.x > FullRect.width;
+                    CutRight = TilesCount.x * TileSize.x + (TilesCount.x - 1) * tileSpacing.x > FullRect.width;
                 }
                 else
                 {
@@ -139,7 +139,7 @@ namespace Utkaka.ScaleNineSlicer.UI
                 {
                     TileSize.y /= multipliedPixelsPerUnit;
                     TilesCount.y = Mathf.CeilToInt(FullRect.size.y / TileSize.y);
-                    CutTop = TilesCount.y * TileSize.y > FullRect.height;
+                    CutTop = TilesCount.y * TileSize.y + (TilesCount.y - 1) * tileSpacing.y > FullRect.height;
                 }
                 else
                 {

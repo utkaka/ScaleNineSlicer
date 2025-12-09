@@ -35,6 +35,7 @@ namespace Utkaka.ScaleNineSlicer.Editor.UI
         private SerializedProperty _fillClockwiseProperty;
         private SerializedProperty _fillOriginProperty;
         private SerializedProperty _fillAmountProperty;
+        private SerializedProperty _customFillingProperty;
         
         private AnimBool _showSlicedOptions;
         private AnimBool _showTiledOptions;
@@ -110,6 +111,7 @@ namespace Utkaka.ScaleNineSlicer.Editor.UI
             _fillClockwiseProperty = serializedObject.FindProperty("_fillClockwise");
             _fillOriginProperty = serializedObject.FindProperty("_fillOrigin");
             _fillAmountProperty = serializedObject.FindProperty("_fillAmount");
+            _customFillingProperty = serializedObject.FindProperty("_customFilling");
             _showFillOptions = new AnimBool(_filledProperty.boolValue);
             _showFillOptions.valueChanged.AddListener(Repaint);
             
@@ -144,25 +146,6 @@ namespace Utkaka.ScaleNineSlicer.Editor.UI
             SlicedGUI();
             TiledGUI();
             FilledGUI();
-            /*
-
-            m_ShowType.target = m_Sprite.objectReferenceValue != null;
-            if (EditorGUILayout.BeginFadeGroup(m_ShowType.faded))
-                TypeGUI();
-            EditorGUILayout.EndFadeGroup();
-
-            SetShowNativeSize(false);
-            if (EditorGUILayout.BeginFadeGroup(m_ShowNativeSize.faded))
-            {
-                EditorGUI.indentLevel++;
-
-                if ((Image.Type)m_Type.enumValueIndex == Image.Type.Simple)
-                EditorGUI.indentLevel--;
-            }
-            EditorGUILayout.EndFadeGroup();
-            
-
-            */
             
             NativeSizeButtonGUI();
             
@@ -171,8 +154,6 @@ namespace Utkaka.ScaleNineSlicer.Editor.UI
 
         void SetShowNativeSize(bool instant)
         {
-            /*Image.Type type = (Image.Type)m_Type.enumValueIndex;
-            bool showNativeSize = (type == Image.Type.Simple || type == Image.Type.Filled) && m_Sprite.objectReferenceValue != null;*/
             bool showNativeSize = true;
             base.SetShowNativeSize(showNativeSize, instant);
         }
@@ -236,35 +217,43 @@ namespace Utkaka.ScaleNineSlicer.Editor.UI
             if (EditorGUILayout.BeginFadeGroup(_showFillOptions.faded))
             {
                 EditorGUILayout.PropertyField(_fillMethodProperty);
-                var shapeRect = EditorGUILayout.GetControlRect(true);
-                switch ((Image.FillMethod)_fillMethodProperty.enumValueIndex)
+                if ((SlicedImage.FillMethod)_fillMethodProperty.enumValueIndex == SlicedImage.FillMethod.Custom)
                 {
-                    case Image.FillMethod.Horizontal:
-                        Popup(shapeRect, _fillOriginProperty, Styles.OriginHorizontalStyle, Styles.text);
-                        break;
-                    case Image.FillMethod.Vertical:
-                        Popup(shapeRect, _fillOriginProperty, Styles.OriginVerticalStyle, Styles.text);
-                        break;
-                    case Image.FillMethod.Radial90:
-                        Popup(shapeRect, _fillOriginProperty, Styles.Origin90Style, Styles.text);
-                        break;
-                    case Image.FillMethod.Radial180:
-                        Popup(shapeRect, _fillOriginProperty, Styles.Origin180Style, Styles.text);
-                        break;
-                    case Image.FillMethod.Radial360:
-                        Popup(shapeRect, _fillOriginProperty, Styles.Origin360Style, Styles.text);
-                        break;
+                    EditorGUILayout.PropertyField(_customFillingProperty);
+                }
+                else
+                {
+                    var shapeRect = EditorGUILayout.GetControlRect(true);
+                    switch ((SlicedImage.FillMethod)_fillMethodProperty.enumValueIndex)
+                    {
+                        case SlicedImage.FillMethod.Horizontal:
+                            Popup(shapeRect, _fillOriginProperty, Styles.OriginHorizontalStyle, Styles.text);
+                            break;
+                        case SlicedImage.FillMethod.Vertical:
+                            Popup(shapeRect, _fillOriginProperty, Styles.OriginVerticalStyle, Styles.text);
+                            break;
+                        case SlicedImage.FillMethod.Radial90:
+                            Popup(shapeRect, _fillOriginProperty, Styles.Origin90Style, Styles.text);
+                            break;
+                        case SlicedImage.FillMethod.Radial180:
+                            Popup(shapeRect, _fillOriginProperty, Styles.Origin180Style, Styles.text);
+                            break;
+                        case SlicedImage.FillMethod.Radial360:
+                            Popup(shapeRect, _fillOriginProperty, Styles.Origin360Style, Styles.text);
+                            break;
+                        case SlicedImage.FillMethod.Custom:
+                            break;
+                    }
+                    if ((SlicedImage.FillMethod)_fillMethodProperty.enumValueIndex > SlicedImage.FillMethod.Vertical)
+                    {
+                        EditorGUILayout.PropertyField(_fillClockwiseProperty, _clockwiseContent);
+                    }   
                 }
                 if (_isDriven)
                     EditorGUILayout.HelpBox("The Fill amount property is driven by Slider.", MessageType.None);
                 using (new EditorGUI.DisabledScope(_isDriven))
                 {
                     EditorGUILayout.PropertyField(_fillAmountProperty);
-                }
-
-                if ((Image.FillMethod)_fillMethodProperty.enumValueIndex > Image.FillMethod.Vertical)
-                {
-                    EditorGUILayout.PropertyField(_fillClockwiseProperty, _clockwiseContent);
                 }
             }
             EditorGUI.indentLevel--;

@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.UI;
+using Utkaka.ScaleNineSlicer.UI;
 
 namespace Utkaka.ScaleNineSlicer.Tests.Editor
 {
@@ -38,7 +39,7 @@ namespace Utkaka.ScaleNineSlicer.Tests.Editor
             image.fillAmount = 0.3f;
             var slicedImage = CreateSlicedImage(sprite, preserveAspect, useSpriteMesh, fillCenter, pixelsPerUnitMultiplier, size);
             slicedImage.filled = true;
-            slicedImage.fillMethod = Image.FillMethod.Horizontal;
+            slicedImage.fillMethod = SlicedImage.FillMethod.Horizontal;
             slicedImage.fillOrigin = 0;
             slicedImage.fillAmount = 0.3f;
 
@@ -61,7 +62,7 @@ namespace Utkaka.ScaleNineSlicer.Tests.Editor
             image.fillAmount = fillAmount;
             var slicedImage = CreateSlicedImage(sprite, false, false, true, 1, size);
             slicedImage.filled = true;
-            slicedImage.fillMethod = Image.FillMethod.Horizontal;
+            slicedImage.fillMethod = SlicedImage.FillMethod.Horizontal;
             slicedImage.fillOrigin = origin;
             slicedImage.fillAmount = fillAmount;
 
@@ -84,7 +85,7 @@ namespace Utkaka.ScaleNineSlicer.Tests.Editor
             image.fillAmount = fillAmount;
             var slicedImage = CreateSlicedImage(sprite, false, false, true, 1, size);
             slicedImage.filled = true;
-            slicedImage.fillMethod = Image.FillMethod.Vertical;
+            slicedImage.fillMethod = SlicedImage.FillMethod.Vertical;
             slicedImage.fillOrigin = origin;
             slicedImage.fillAmount = fillAmount;
 
@@ -109,7 +110,7 @@ namespace Utkaka.ScaleNineSlicer.Tests.Editor
             image.fillAmount = fillAmount;
             var slicedImage = CreateSlicedImage(sprite, false, false, true, 1, size);
             slicedImage.filled = true;
-            slicedImage.fillMethod = Image.FillMethod.Radial90;
+            slicedImage.fillMethod = SlicedImage.FillMethod.Radial90;
             slicedImage.fillOrigin = origin;
             slicedImage.fillClockwise = clockwise;
             slicedImage.fillAmount = fillAmount;
@@ -135,7 +136,7 @@ namespace Utkaka.ScaleNineSlicer.Tests.Editor
             image.fillAmount = fillAmount;
             var slicedImage = CreateSlicedImage(sprite, false, false, true, 1, size);
             slicedImage.filled = true;
-            slicedImage.fillMethod = Image.FillMethod.Radial180;
+            slicedImage.fillMethod = SlicedImage.FillMethod.Radial180;
             slicedImage.fillOrigin = origin;
             slicedImage.fillClockwise = clockwise;
             slicedImage.fillAmount = fillAmount;
@@ -161,7 +162,7 @@ namespace Utkaka.ScaleNineSlicer.Tests.Editor
             image.fillAmount = fillAmount;
             var slicedImage = CreateSlicedImage(sprite, false, false, true, 1, size);
             slicedImage.filled = true;
-            slicedImage.fillMethod = Image.FillMethod.Radial360;
+            slicedImage.fillMethod = SlicedImage.FillMethod.Radial360;
             slicedImage.fillOrigin = origin;
             slicedImage.fillClockwise = clockwise;
             slicedImage.fillAmount = fillAmount;

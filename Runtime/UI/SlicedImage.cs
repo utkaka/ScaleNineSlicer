@@ -13,6 +13,16 @@ namespace Utkaka.ScaleNineSlicer.UI
         ILayoutElement,
         ICanvasRaycastFilter
     {
+        public enum FillMethod
+        {
+            Horizontal = 0,
+            Vertical = 1,
+            Radial90 = 2,
+            Radial180 = 3,
+            Radial360 = 4,
+            Custom = 5
+        }
+        
         [SerializeField]
         private Sprite _sprite;
         
@@ -42,7 +52,7 @@ namespace Utkaka.ScaleNineSlicer.UI
         [SerializeField]
         private bool _filled;
         [SerializeField]
-        private Image.FillMethod _fillMethod;
+        private FillMethod _fillMethod;
         [SerializeField]
         private bool _fillClockwise = true;
         [SerializeField]
@@ -50,6 +60,8 @@ namespace Utkaka.ScaleNineSlicer.UI
         [Range(0, 1)]
         [SerializeField]
         private float _fillAmount = 1.0f;
+        [SerializeField]
+        private SlicedImageCustomFilling _customFilling;
         
         private float _cachedReferencePixelsPerUnit = 100;
         private float _alphaHitTestMinimumThreshold;
@@ -210,7 +222,7 @@ namespace Utkaka.ScaleNineSlicer.UI
             set { if (Utils.SetStruct(ref _fillOrigin, value)) SetVerticesDirty(); }
         }
         
-        public Image.FillMethod fillMethod
+        public FillMethod fillMethod
         {
             get => _fillMethod;
             set
@@ -238,6 +250,15 @@ namespace Utkaka.ScaleNineSlicer.UI
             set
             {
                 if (Utils.SetStruct(ref _fillClockwise, value)) SetVerticesDirty();
+            }
+        }
+        
+        public SlicedImageCustomFilling customFilling
+        {
+            get => _customFilling;
+            set
+            {
+                if (Utils.SetClass(ref _customFilling, value) && filled) SetVerticesDirty();
             }
         }
 
@@ -432,51 +453,61 @@ namespace Utkaka.ScaleNineSlicer.UI
             }
         }
 
-        protected virtual int GetPolygonsCount()
+        private int GetPolygonsCount()
         {
-            if (!filled || fillMethod != Image.FillMethod.Radial360) return 1;
+            if (fillMethod == FillMethod.Custom && customFilling != null)
+                return customFilling.GetPolygonsCount(fillAmount);
+            if (!filled || fillMethod != FillMethod.Radial360) return 1;
             return fillAmount <= 0.5f || Mathf.Approximately(fillAmount, 1.0f) ? 1 : 2;
         }
 
-        protected virtual int GetPolygonCutLinesCount(int polygonIndex, bool cutTilesX, bool cutTilesY)
+        private int GetPolygonCutLinesCount(int polygonIndex, bool cutTilesX, bool cutTilesY)
         {
             var baseCutLineCount = 0;
             if (cutTilesX) baseCutLineCount++;
             if (cutTilesY) baseCutLineCount++;
+            if (fillMethod == FillMethod.Custom)
+            {
+                return customFilling == null
+                    ? baseCutLineCount
+                    : customFilling.GetPolygonCutLinesCount(polygonIndex, fillAmount) + baseCutLineCount;
+            }
             if (!filled || Mathf.Approximately(fillAmount, 1.0f)) return baseCutLineCount;
-            if (fillMethod != Image.FillMethod.Radial360 || polygonIndex == 0 && fillAmount >= 0.5f) return baseCutLineCount + 1;
+            if (fillMethod != FillMethod.Radial360 || polygonIndex == 0 && fillAmount >= 0.5f) return baseCutLineCount + 1;
             return baseCutLineCount + 2;
         }
 
 
-        protected virtual void FillPolygonCutLines(Span<CutLine> cutLines, Rect rect, int polygonIndex, bool cutTilesX, bool cutTilesY)
+        private void FillPolygonCutLines(Span<CutLine> cutLines, Rect rect, int polygonIndex, bool cutTilesX, bool cutTilesY)
         {
-            var cutLineIndex = 0;
             if (cutTilesX)
             {
-                cutLines[cutLineIndex++] = CutLine.FromLine(new Vector2(rect.xMax, rect.yMax), new Vector2(rect.xMax, rect.yMin));
+                cutLines[^1] = new CutLine(rect.max, Vector2.left);
             }
             if (cutTilesY)
             {
-                cutLines[cutLineIndex] = CutLine.FromLine(new Vector2(rect.xMin, rect.yMax), new Vector2(rect.xMax, rect.yMax));
+                cutLines[^2] = new CutLine(rect.max, Vector2.down);
             }
             if (!filled || Mathf.Approximately(fillAmount, 1.0f)) return;
             switch (fillMethod)
             {
-                case Image.FillMethod.Horizontal:
+                case FillMethod.Horizontal:
                     FillHorizontalCutLine(cutLines, rect);
                     break;
-                case Image.FillMethod.Vertical:
+                case FillMethod.Vertical:
                     FillVerticalCutLine(cutLines, rect);
                     break;
-                case Image.FillMethod.Radial90:
+                case FillMethod.Radial90:
                     FillRadial90CutLine(cutLines, rect, fillOrigin, fillAmount, fillClockwise);
                     break;
-                case Image.FillMethod.Radial180:
+                case FillMethod.Radial180:
                     FillRadial180CutLine(cutLines, rect, fillOrigin, fillAmount, fillClockwise);
                     break;
-                case Image.FillMethod.Radial360:
+                case FillMethod.Radial360:
                     FillRadial360CutLine(cutLines, rect, polygonIndex, fillOrigin, fillAmount, fillClockwise);
+                    break;
+                case FillMethod.Custom:
+                    customFilling?.FillPolygonCutLines(cutLines, fillAmount, rect, polygonIndex);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -493,7 +524,7 @@ namespace Utkaka.ScaleNineSlicer.UI
                 normal = Vector2.right;
             }
             fillX += rect.x;
-            cutLines[^1] = new CutLine(new Vector2(fillX, 0.0f), normal);
+            cutLines[0] = new CutLine(new Vector2(fillX, 0.0f), normal);
         }
         
         private void FillVerticalCutLine(Span<CutLine> cutLines, Rect rect)
@@ -506,7 +537,7 @@ namespace Utkaka.ScaleNineSlicer.UI
                 normal = Vector2.up;
             }
             fillY += rect.y;
-            cutLines[^1] = new CutLine(new Vector2(0.0f, fillY), normal);
+            cutLines[0] = new CutLine(new Vector2(0.0f, fillY), normal);
         }
 
         private void FillRadial360CutLine(Span<CutLine> cutLines, Rect rect, int polygonIndex, int side, float amount, bool clockwise)
@@ -560,12 +591,12 @@ namespace Utkaka.ScaleNineSlicer.UI
 
             if (isFirstHalf && amount >= 0.5f)
             {
-                cutLines[^1] = polygonCutLine;
+                cutLines[0] = polygonCutLine;
                 return;
             }
             
             FillRadial180CutLine(cutLines, halfRect, halfSide, fill, clockwise);
-            cutLines[^2] = polygonCutLine;
+            cutLines[1] = polygonCutLine;
         }
 
         private static void FillRadial180CutLine(Span<CutLine> cutLines, Rect rect, int side, float amount, bool clockwise)
@@ -633,7 +664,7 @@ namespace Utkaka.ScaleNineSlicer.UI
                 fill = 1.0f - fill;
             }
             var intersection = GetRadialIntersection(center, corner, fill);
-            cutLines[^1] = clockwise ? CutLine.FromLine(intersection, center) : CutLine.FromLine(center, intersection);
+            cutLines[0] = clockwise ? CutLine.FromLine(intersection, center) : CutLine.FromLine(center, intersection);
         }
         
         private static Vector2 GetRadialIntersection(Vector2 center, Vector2 corner, float fill)
@@ -661,41 +692,6 @@ namespace Utkaka.ScaleNineSlicer.UI
             }
 
             return result;
-        }
-
-        private void PopulateBaseVertices(Rect originalRect, Rect adjustedRect, out float2x4 positions, out float2x4 uv, out int verticalVertexCount, out int horizontalVertexCount)
-        {
-            var adjustedPixelsPerUnit = multipliedPixelsPerUnit;
-            var outerUV = DataUtility.GetOuterUV(activeSprite);
-            var innerUV = DataUtility.GetInnerUV(activeSprite);
-            var padding = DataUtility.GetPadding(activeSprite) / adjustedPixelsPerUnit;
-            var position = (float2)adjustedRect.position;
-            var adjustedBorders = Utils.GetAdjustedBorders(activeSprite.border / adjustedPixelsPerUnit, originalRect, adjustedRect);
-            
-            positions = float2x4.zero;
-            positions[0] = new float2(padding.x, padding.y) + position;
-            positions[3] = new float2(adjustedRect.width - padding.z, adjustedRect.height - padding.w) + position;
-            positions[1] = new float2(adjustedBorders.x, adjustedBorders.y) + position;
-            positions[2] = new float2(adjustedRect.width - adjustedBorders.z, adjustedRect.height - adjustedBorders.w) + position;
-
-            uv = float2x4.zero;
-            uv[0] = new float2(outerUV.x, outerUV.y);
-            uv[1] = new float2(innerUV.x, innerUV.y);
-            uv[2] = new float2(innerUV.z, innerUV.w);
-            uv[3] = new float2(outerUV.z, outerUV.w);
-            
-            var canSimplifyMesh = fillCenter && Mathf.Approximately(adjustedPixelsPerUnit, 1.0f);
-
-            if (sliced && hasBorder)
-            {   
-                verticalVertexCount = Mathf.Approximately(adjustedRect.height, activeSprite.rect.height) && canSimplifyMesh ? 2 : 4;
-                horizontalVertexCount = Mathf.Approximately(adjustedRect.width, activeSprite.rect.width) && canSimplifyMesh ? 2 : 4;
-            }
-            else
-            {
-                verticalVertexCount = 2;
-                horizontalVertexCount = 2;
-            }
         }
         
         private void FillBaseVertices(Span<CutInputVertex> vertices, SlicedImageMeshContext context)
@@ -796,26 +792,6 @@ namespace Utkaka.ScaleNineSlicer.UI
                 Position = new Vector2(columnPositionUV.x, row4PositionUV.x),
                 UV = new Vector2(columnPositionUV.y, row4PositionUV.y)
             };
-        }
-
-        private void FillBaseVertices(Span<CutInputVertex> vertices, float2x4 positions, float2x4 uv,
-            int verticalVertexCount, int horizontalVertexCount)
-        {
-            var index = 0;
-            for (var x = 0; x < 4; x++)
-            {
-                for (var y = 0; y < 4; y++)
-                {
-                    var vertex = new CutInputVertex
-                    {
-                        Position = new Vector2(positions[x].x, positions[y].y),
-                        UV = new Vector2(uv[x].x, uv[y].y)
-                    };
-                    vertices[index++] = vertex;
-                    if (verticalVertexCount == 2) y += 2;
-                }
-                if (horizontalVertexCount == 2) x += 2;
-            }
         }
         
         protected override void UpdateMaterial()

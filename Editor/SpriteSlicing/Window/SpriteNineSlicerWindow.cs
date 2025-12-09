@@ -109,7 +109,10 @@ namespace Utkaka.ScaleNineSlicer.Editor.SpriteSlicing.Window {
 
         private void OnDestroy() {
             Selection.selectionChanged -= UpdateSelection;
-            _selectedSpriteInfo.BorderChange -= UpdateTrimmedSpriteInfo;
+            if (_selectedSpriteInfo != null)
+            {
+                _selectedSpriteInfo.BorderChange -= UpdateTrimmedSpriteInfo;
+            }
         }
 
         private void ShowView(ChildView view) {

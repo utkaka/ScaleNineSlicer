@@ -371,11 +371,11 @@ namespace Utkaka.ScaleNineSlicer.UI
 
             var context = new SlicedImageMeshContext(this);
             var totalVertexCount = context.VertexCountPerTile.x * context.VertexCountPerTile.y;
-            /*if (totalVertexCount > 65000)
+            if (totalVertexCount > 65000)
             {
-                Debug.LogError($"Too many vertices per tile {totalVertexCount}");
+                Debug.LogError($"Too many vertices per tile: {totalVertexCount}");
                 return;
-            }*/
+            }
 
             var heapArray = Utils.GetFromPoolIfNeeded<CutInputVertex>(totalVertexCount);
             var vertices = heapArray == null ? stackalloc CutInputVertex[totalVertexCount] : heapArray.AsSpan();

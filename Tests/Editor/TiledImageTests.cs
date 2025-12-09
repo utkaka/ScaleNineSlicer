@@ -6,6 +6,8 @@ namespace Utkaka.ScaleNineSlicer.Tests.Editor
 {
     public class TiledImageTests : AbstractImageTest
     {
+        private static readonly Vector4[] OverrideBorder = { Vector4.zero, new(15f, 15f, 15f, 20f) };
+        
         [Test]
         public void TileRepeated(
            [ValueSource(nameof(MeshType))] SpriteMeshType spriteMeshType,
@@ -16,20 +18,24 @@ namespace Utkaka.ScaleNineSlicer.Tests.Editor
            [ValueSource(nameof(FillCenter))] bool fillCenter,
            [ValueSource(nameof(PixelsPerUnitMultiplier))] int pixelsPerUnitMultiplier)
         {
-            if (border != Vector4.zero)
+            if (border == Vector4.zero && !fillCenter)
             {
-                Assert.Ignore("Ignore sprite with borders as UI.Image doesn't handle it correctly");
-            }
-            if (!fillCenter)
-            {
-                Assert.Ignore("Ignore fillCenter == false as UI.Image doesn't handle it correctly");
+                Assert.Ignore("Ignore sprite without with fillCenter == false borders as UI.Image doesn't handle it correctly");
             }
             var sprite = CreateSprite(TextureWrapMode.Repeat, spriteMeshType, border);
             var image = CreateImage(sprite, preserveAspect, useSpriteMesh, fillCenter, pixelsPerUnitMultiplier, size);
             image.type = Image.Type.Tiled;
             var slicedImage = CreateSlicedImage(sprite, preserveAspect, useSpriteMesh, fillCenter, pixelsPerUnitMultiplier, size);
-            slicedImage.tiled = true;
-            slicedImage.tileSize = sprite.rect.size;
+            if (border != Vector4.zero)
+            {
+                slicedImage.sliced = true;
+                slicedImage.tileScaledSlices = true;
+            }
+            else
+            {
+                slicedImage.tiled = true;
+                slicedImage.tileSize = sprite.rect.size;
+            }
 
             CompareLessMeshStatistics(image, slicedImage);
             CompareImages(size, image, slicedImage);
@@ -46,24 +52,28 @@ namespace Utkaka.ScaleNineSlicer.Tests.Editor
             [ValueSource(nameof(FillCenter))] bool fillCenter,
             [ValueSource(nameof(PixelsPerUnitMultiplier))] int pixelsPerUnitMultiplier)
         {
-            if (border != Vector4.zero)
+            if (border == Vector4.zero && !fillCenter)
             {
-                Assert.Ignore("Ignore sprite with borders as UI.Image doesn't handle it correctly");
-            }
-            if (!fillCenter)
-            {
-                Assert.Ignore("Ignore fillCenter == false as UI.Image doesn't handle it correctly");
+                Assert.Ignore("Ignore sprite without with fillCenter == false borders as UI.Image doesn't handle it correctly");
             }
             if (pixelsPerUnitMultiplier != 1)
             {
-                Assert.Ignore("For some reason some of SlicedImage tiles are slightly shifted compared to UI.Image.");
+                //Assert.Ignore("For some reason some of SlicedImage tiles are slightly shifted compared to UI.Image.");
             }
             var sprite = CreateSprite(TextureWrapMode.Clamp, spriteMeshType, border);
             var image = CreateImage(sprite, preserveAspect, useSpriteMesh, fillCenter, pixelsPerUnitMultiplier, size);
             image.type = Image.Type.Tiled;
             var slicedImage = CreateSlicedImage(sprite, preserveAspect, useSpriteMesh, fillCenter, pixelsPerUnitMultiplier, size);
-            slicedImage.tiled = true;
-            slicedImage.tileSize = sprite.rect.size;
+            if (border != Vector4.zero)
+            {
+                slicedImage.sliced = true;
+                slicedImage.tileScaledSlices = true;
+            }
+            else
+            {
+                slicedImage.tiled = true;
+                slicedImage.tileSize = sprite.rect.size;
+            }
 
             CompareLessMeshStatistics(image, slicedImage);
             CompareImages(size, image, slicedImage);

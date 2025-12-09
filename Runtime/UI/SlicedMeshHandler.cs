@@ -9,13 +9,15 @@ namespace Utkaka.ScaleNineSlicer.UI
         public static void PrepareMesh(Span<CutInputVertex> inputVertices, ReadOnlySpan<CutLine> cutLines, 
             VertexHelper vertexHelper, Color32 color, int width, int height, bool skipCenter)
         {
+            //Debug.Log($"PrepareMesh {width}x{height}");
             if (width == 0 || height == 0) return;
             Span<CutVertex> edgeIntersections = stackalloc CutVertex[((width - 1) * height + width * (height - 1)) * cutLines.Length];
             for (var i = 0; i < width - 1; i++)
             {
                 for (var j = 0; j < height - 1; j++)
                 {
-                    if (skipCenter && i == 1 && j == 1) continue;
+                    //zDebug.Log("Process Quad");
+                    if (skipCenter && i > 0 && i < width - 2 && j > 0 && j < height - 2) continue;
                     ProcessMeshQuad(inputVertices, edgeIntersections, cutLines, vertexHelper, color, width, height, i, j);
                 }
             }
@@ -81,6 +83,10 @@ namespace Utkaka.ScaleNineSlicer.UI
             var point0 = vertexBuffer1[0].VertIndex - 1;
             for (var i = 1; i + 1 < vertexCount; i++)
             {
+                if (Mathf.Approximately(vertexBuffer1[0].Position.x, vertexBuffer1[i].Position.x) 
+                    && Mathf.Approximately(vertexBuffer1[0].Position.x, vertexBuffer1[i + 1].Position.x)) continue;
+                if (Mathf.Approximately(vertexBuffer1[0].Position.y, vertexBuffer1[i].Position.y) 
+                    && Mathf.Approximately(vertexBuffer1[0].Position.y, vertexBuffer1[i + 1].Position.y)) continue;
                 vertexHelper.AddTriangle(point0, vertexBuffer1[i].VertIndex - 1, vertexBuffer1[i + 1].VertIndex - 1);
             }
         }

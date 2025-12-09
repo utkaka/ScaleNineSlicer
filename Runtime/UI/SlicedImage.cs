@@ -1,4 +1,5 @@
 using System;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Sprites;
@@ -282,7 +283,7 @@ namespace Utkaka.ScaleNineSlicer.UI
             }
         }
 
-        protected float multipliedPixelsPerUnit => pixelsPerUnit * _pixelsPerUnitMultiplier;
+        public float multipliedPixelsPerUnit => pixelsPerUnit * _pixelsPerUnitMultiplier;
 
         public override Texture mainTexture
         {
@@ -356,89 +357,58 @@ namespace Utkaka.ScaleNineSlicer.UI
             }
             toFill.Clear();
             
-            var spriteSize = activeSprite.rect.size;
-            var baseRect = rectTransform.rect;
-            var adjustedBaseRect = GetPixelAdjustedRect();
-            var completeRect = adjustedBaseRect;
-
-            if (preserveAspect && !sliced && !tiled)
+            if (useSpriteMesh && !sliced && !tiled && !filled)
             {
-                Utils.PreserveSpriteAspectRatio(ref adjustedBaseRect, spriteSize, rectTransform.pivot);
-                completeRect = adjustedBaseRect;
-            }
-
-            if (useSpriteMesh && !sliced && !filled && !tiled)
-            {
-                SpriteMeshHandler.PrepareMesh(toFill, activeSprite, color, adjustedBaseRect, rectTransform.pivot);
+                var spriteMeshRect = GetPixelAdjustedRect();
+                if (preserveAspect)
+                {
+                    Utils.PreserveSpriteAspectRatio(ref spriteMeshRect, activeSprite.rect.size, rectTransform.pivot);
+                }
+                SpriteMeshHandler.PrepareMesh(toFill, activeSprite, color, spriteMeshRect, rectTransform.pivot);
                 return;
             }
 
-            var tilesCount = Vector2Int.one;
-            var adjustedTileSize = tileSize / multipliedPixelsPerUnit;
-            
-            var canRepeatTiles = activeSprite.texture.wrapMode == TextureWrapMode.Repeat;
-            var canRepeatX = canRepeatTiles && Mathf.Approximately(tileSpacing.x,  0.0f) && Mathf.Approximately(tileSize.x, spriteSize.x);
-            var canRepeatY = canRepeatTiles && Mathf.Approximately(tileSpacing.y,  0.0f) && Mathf.Approximately(tileSize.y, spriteSize.y);
-            
-            var cutTilesX = false;
-            var cutTilesY = false;
 
-            if (tiled && !(canRepeatX && canRepeatY))
+            var context = new SlicedImageMeshContext(this);
+            var totalVertexCount = context.VertexCountPerTile.x * context.VertexCountPerTile.y;
+            if (totalVertexCount > 16000)
             {
-                if (!canRepeatX)
-                {
-                    tilesCount.x = Mathf.CeilToInt(completeRect.size.x / adjustedTileSize.x);
-                    baseRect.size = new Vector2(adjustedTileSize.x, baseRect.size.y);
-                    cutTilesX = tilesCount.x * adjustedTileSize.x > completeRect.width;
-                }
-
-                if (!canRepeatY)
-                {
-                    tilesCount.y = Mathf.CeilToInt(completeRect.size.y / adjustedTileSize.y);
-                    baseRect.size = new Vector2(baseRect.size.x, adjustedTileSize.y);
-                    cutTilesY = tilesCount.y * adjustedTileSize.y > completeRect.height;
-                }
-                adjustedBaseRect.size = baseRect.size;
+                Debug.LogError("Too many vertices per tile");
+                return;
             }
+            
+            //Debug.Log(UnsafeUtility.SizeOf(typeof(CutInputVertex)));
 
-            var gridSize = GetBaseVerticesCount(baseRect, adjustedBaseRect);
-            Span<CutInputVertex> vertices = stackalloc CutInputVertex[gridSize.x * gridSize.y];
-            FillBaseVertices(vertices, completeRect, baseRect, adjustedBaseRect, gridSize, canRepeatX, canRepeatY);
-
-            /*PopulateBaseVertices(baseRect, adjustedBaseRect, out var positions, out var uv, out var verticalVertexCount, out var horizontalVertexCount);
-            Span<CutInputVertex> vertices = stackalloc CutInputVertex[verticalVertexCount * horizontalVertexCount];
-
-            FillBaseVertices(vertices, positions, uv, verticalVertexCount, horizontalVertexCount);*/
+            Span<CutInputVertex> vertices = stackalloc CutInputVertex[totalVertexCount];
+            FillBaseVertices(vertices, context);
 
             var polygonsCount = GetPolygonsCount();
             for (var polygonIndex = 0; polygonIndex < polygonsCount; polygonIndex++)
             {
-                PreparePolygon(polygonIndex, completeRect, vertices, toFill, 
-                    gridSize,
-                    tilesCount, adjustedTileSize, cutTilesX, cutTilesY);
+                PreparePolygon(polygonIndex, context, vertices, toFill, true, true);
             }
         }
 
-        private void PreparePolygon(int polygonIndex, Rect imageRect, Span<CutInputVertex> vertices, 
-            VertexHelper toFill, Vector2Int vertexCount, Vector2Int tilesCount, Vector2 adjustedTileSize,
+        private void PreparePolygon(int polygonIndex, SlicedImageMeshContext context, Span<CutInputVertex> vertices, 
+            VertexHelper toFill,
             bool cutTilesX, bool cutTilesY)
         {
             var cutLinesCount = GetPolygonCutLinesCount(polygonIndex, cutTilesX, cutTilesY);
             Span<CutLine> cuts = stackalloc CutLine[cutLinesCount];
-            FillPolygonCutLines(cuts, imageRect, polygonIndex, cutTilesX, cutTilesY);
+            FillPolygonCutLines(cuts, context.FullRect, polygonIndex, cutTilesX, cutTilesY);
             Span<CutInputVertex> tileVertices = stackalloc CutInputVertex[vertices.Length];
-            for (var i = 0; i < tilesCount.x; i++)
+            for (var i = 0; i < context.TilesCount.x; i++)
             {
-                for (var j = 0; j < tilesCount.y; j++)
+                for (var j = 0; j < context.TilesCount.y; j++)
                 {
-                    var tileShift = new Vector2((adjustedTileSize.x + tileSpacing.x) * i, (adjustedTileSize.y + tileSpacing.y) * j);
+                    var tileShift = new Vector2((context.TileSize.x + tileSpacing.x) * i, (context.TileSize.y + tileSpacing.y) * j);
                     for (var v = 0; v < vertices.Length; v++)
                     {
                         var vertex = vertices[v];
                         vertex.Position = RectTransformUtility.PixelAdjustPoint(vertex.Position + tileShift, rectTransform, canvas);
                         tileVertices[v] = vertex;
                     }
-                    SlicedMeshHandler.PrepareMesh(tileVertices, cuts, toFill, color, vertexCount.x, vertexCount.y, !fillCenter);
+                    SlicedMeshHandler.PrepareMesh(tileVertices, cuts, toFill, color, context.VertexCountPerTile.x, context.VertexCountPerTile.y, !fillCenter);
                 }
             }
         }
@@ -709,90 +679,25 @@ namespace Utkaka.ScaleNineSlicer.UI
             }
         }
         
-        private Vector2Int GetBaseVerticesCount(Rect originalRect, Rect adjustedRect)
-        {
-            var canSimplifyMesh = fillCenter && Mathf.Approximately(multipliedPixelsPerUnit, 1.0f);
-            if (sliced && hasBorder)
-            {
-                int horizontalVertexCount;
-                int verticalVertexCount;
-                
-                //TODO: Cleanup
-                var adjustedPixelsPerUnit = multipliedPixelsPerUnit;
-                var adjustedBorders = Utils.GetAdjustedBorders(activeSprite.border / adjustedPixelsPerUnit, originalRect, adjustedRect);
-                var position2 = new Vector2(adjustedBorders.x, adjustedBorders.y);
-                var position3 = new Vector2(adjustedRect.width - adjustedBorders.z, adjustedRect.height - adjustedBorders.w);
-
-                var scaledPartSize = position3 - position2;
-                var baseTileSize = new Vector2(activeSprite.rect.width - activeSprite.border.x - activeSprite.border.z,
-                    activeSprite.rect.height - activeSprite.border.y - activeSprite.border.w);
-                var tileSize = _slicedTileSize == Vector2.zero ? 
-                    baseTileSize : _slicedTileSize;
-                
-                if (Mathf.Approximately(adjustedRect.width, activeSprite.rect.width) && canSimplifyMesh)
-                {
-                    horizontalVertexCount = 2;
-                }
-                else if (!_tileScaledSlices)
-                {
-                    horizontalVertexCount = 4;
-                }
-                else
-                {
-                    horizontalVertexCount = Mathf.CeilToInt(scaledPartSize.x / tileSize.x) * 2 + 2;
-                }
-                if (Mathf.Approximately(adjustedRect.height, activeSprite.rect.height) && canSimplifyMesh)
-                {
-                    verticalVertexCount = 2;
-                }
-                else if (!_tileScaledSlices)
-                {
-                    verticalVertexCount = 4;
-                }
-                else
-                {
-                    verticalVertexCount = Mathf.CeilToInt(scaledPartSize.y / tileSize.y) * 2 + 2;
-                }
-                Debug.Log($"{horizontalVertexCount}, {verticalVertexCount}");
-                return new Vector2Int(
-                    horizontalVertexCount,
-                    verticalVertexCount);
-            }
-            return new Vector2Int(2, 2);
-        }
-        
-        private void FillBaseVertices(Span<CutInputVertex> vertices, Rect completeRect, Rect originalRect, Rect adjustedRect,
-            Vector2Int gridSize, bool canRepeatX, bool canRepeatY)
+        private void FillBaseVertices(Span<CutInputVertex> vertices, SlicedImageMeshContext context)
         {
             var adjustedPixelsPerUnit = multipliedPixelsPerUnit;
             var outerUV = DataUtility.GetOuterUV(activeSprite);
             var innerUV = DataUtility.GetInnerUV(activeSprite);
             var padding = DataUtility.GetPadding(activeSprite) / adjustedPixelsPerUnit;
-            var position = adjustedRect.position;
-            var adjustedBorders = Utils.GetAdjustedBorders(activeSprite.border / adjustedPixelsPerUnit, originalRect, adjustedRect);
+            var position = context.FullRect.position;
             
             var position1 = new Vector2(padding.x, padding.y) + position;
-            var position2 = new Vector2(adjustedBorders.x, adjustedBorders.y) + position;
-            var position3 = new Vector2(adjustedRect.width - adjustedBorders.z, adjustedRect.height - adjustedBorders.w) + position;
-            var position4 = new Vector2(adjustedRect.width - padding.z, adjustedRect.height - padding.w) + position;
+            var position2 = new Vector2(context.Borders.x, context.Borders.y) + position;
+            var position3 = new Vector2(context.TileSize.x - context.Borders.z,
+                context.TileSize.y - context.Borders.w) + position;
+            var position4 = new Vector2(context.TileSize.x - padding.z, context.TileSize.y - padding.w) +
+                            position;
             
             var uv1 = new Vector2(outerUV.x, outerUV.y);
             var uv2 = new Vector2(innerUV.x, innerUV.y);
             var uv3 = new Vector2(innerUV.z, innerUV.w);
-            var uv4 = new Vector2(outerUV.z, outerUV.w);
-            
-            if (tiled)
-            {
-                if (canRepeatX)
-                {
-                    uv4 = new Vector2(completeRect.width * multipliedPixelsPerUnit / activeSprite.rect.width, uv4.y);
-                }
-
-                if (canRepeatY)
-                {
-                    uv4 = new Vector2(uv4.x, completeRect.height * multipliedPixelsPerUnit / activeSprite.rect.height);
-                }
-            }
+            var uv4 = new Vector2(outerUV.z * context.TopRightUVMultiplier.x, outerUV.w * context.TopRightUVMultiplier.y);
 
             var row1PositionUV = new Vector2(position1.y, uv1.y);
             var row2PositionUV = new Vector2(position2.y, uv2.y);
@@ -801,34 +706,37 @@ namespace Utkaka.ScaleNineSlicer.UI
 
             var indexCount = 0;
             
-            //TODO: Cleanup
-            var baseTileSize = new Vector2(activeSprite.rect.width - activeSprite.border.x - activeSprite.border.z,
-                activeSprite.rect.height - activeSprite.border.y - activeSprite.border.w);
-            var sllicedTileSize = _tileScaledSlices ? (_slicedTileSize == Vector2.zero ? 
-                baseTileSize : _slicedTileSize) : position3 - position2;
 
-            FillVertexColumn(vertices, ref indexCount, gridSize.y,
-                sllicedTileSize.y, new Vector2(position1.x, uv1.x),
+            FillVertexColumn(vertices, ref indexCount, context.InnerTilesCount.y,
+                context.InnerTileSize.y, new Vector2(position1.x, uv1.x),
                 row1PositionUV, row2PositionUV, row3PositionUV, row4PositionUV);
             
-            var innerCellsCount = (gridSize.x - 2) / 2;
-            for (var i = 0; i < innerCellsCount; i++)
+            for (var i = 0; i < context.InnerTilesCount.x; i++)
             {
-                var positionX = position2.x + i * sllicedTileSize.x;
-                FillVertexColumn(vertices, ref indexCount, gridSize.y,
-                    sllicedTileSize.y, new Vector2(positionX, uv2.x),
+                var positionX = position2.x + i * context.InnerTileSize.x;
+                FillVertexColumn(vertices, ref indexCount, context.InnerTilesCount.y,
+                    context.InnerTileSize.y, new Vector2(positionX, uv2.x),
                     row1PositionUV, row2PositionUV, row3PositionUV, row4PositionUV);
-                FillVertexColumn(vertices, ref indexCount, gridSize.y,
-                    sllicedTileSize.y, new Vector2(Mathf.Min(positionX + sllicedTileSize.x, position3.x), uv3.x),
+                var columnX = positionX + context.InnerTileSize.x;
+                if (tileScaledSlices && columnX > position3.x)
+                {
+                    columnX = position3.x;
+                    var columnU = Mathf.Lerp(uv2.x, uv3.x, (position3.x - positionX) / context.InnerTileSize.x);
+                    FillVertexColumn(vertices, ref indexCount, context.InnerTilesCount.y,
+                        context.InnerTileSize.y, new Vector2(columnX, columnU),
+                        row1PositionUV, row2PositionUV, row3PositionUV, row4PositionUV);
+                }
+                FillVertexColumn(vertices, ref indexCount, context.InnerTilesCount.y,
+                    context.InnerTileSize.y, new Vector2(columnX, uv3.x),
                     row1PositionUV, row2PositionUV, row3PositionUV, row4PositionUV);
             }
             
-            FillVertexColumn(vertices, ref indexCount, gridSize.y,
-                sllicedTileSize.y, new Vector2(position4.x, uv4.x),
+            FillVertexColumn(vertices, ref indexCount, context.InnerTilesCount.y,
+                context.InnerTileSize.y, new Vector2(position4.x, uv4.x),
                 row1PositionUV, row2PositionUV, row3PositionUV, row4PositionUV);
         }
 
-        private static void FillVertexColumn(Span<CutInputVertex> vertices, ref int currentIndex, int columnHeight,
+        private void FillVertexColumn(Span<CutInputVertex> vertices, ref int currentIndex, int innerCellsCount,
             float tileHeight, Vector2 columnPositionUV,
             Vector2 row1PositionUV, Vector2 row2PositionUV, Vector2 row3PositionUV, Vector2 row4PositionUV)
         {
@@ -838,7 +746,6 @@ namespace Utkaka.ScaleNineSlicer.UI
                 UV = new Vector2(columnPositionUV.y, row1PositionUV.y)
             };
             
-            var innerCellsCount = (columnHeight - 2) / 2;
             for (var i = 0; i < innerCellsCount; i++)
             {
                 var positionY = row2PositionUV.x + i * tileHeight;
@@ -847,9 +754,20 @@ namespace Utkaka.ScaleNineSlicer.UI
                     Position = new Vector2(columnPositionUV.x, positionY),
                     UV = new Vector2(columnPositionUV.y, row2PositionUV.y)
                 };
+                var rowY = positionY + tileHeight;
+                if (tileScaledSlices && rowY > row3PositionUV.x)
+                {
+                    rowY = row3PositionUV.x;
+                    var rowU = Mathf.Lerp(row2PositionUV.y, row3PositionUV.y, (row3PositionUV.x - positionY) / tileHeight);
+                    vertices[currentIndex++] = new CutInputVertex
+                    {
+                        Position = new Vector2(columnPositionUV.x, rowY),
+                        UV = new Vector2(columnPositionUV.y, rowU)
+                    };
+                }
                 vertices[currentIndex++] = new CutInputVertex
                 {
-                    Position = new Vector2(columnPositionUV.x, MathF.Min(positionY + tileHeight, row3PositionUV.x)),
+                    Position = new Vector2(columnPositionUV.x, rowY),
                     UV = new Vector2(columnPositionUV.y, row3PositionUV.y)
                 };
             }

@@ -44,18 +44,20 @@ namespace Utkaka.ScaleNineSlicer.UI
             sliced &= slicedImage.hasBorder;
             
             var multipliedPixelsPerUnit = slicedImage.multipliedPixelsPerUnit;
+            var tileMultipliedPixelsPerUnit = 1.0f;
 
             if (tiled)
             {
                 TileSize = slicedImage.tileSize != Vector2.zero ? slicedImage.tileSize : spriteSize;
                 transformRect.size = TileSize;
+                tileMultipliedPixelsPerUnit = multipliedPixelsPerUnit;
             }
             if (sliced)
             {
                 var canSimplifyMesh = slicedImage.fillCenter && Mathf.Approximately(multipliedPixelsPerUnit, 1.0f);
                 var spriteBorder = slicedImage.activeSprite.border;
 
-                var adjustedRect = new Rect(FullRect.position, TileSize);
+                var adjustedRect = new Rect(FullRect.position, TileSize / tileMultipliedPixelsPerUnit);
                 Borders = Utils.GetAdjustedBorders(spriteBorder / multipliedPixelsPerUnit, 
                     transformRect, adjustedRect);
                 
@@ -68,7 +70,7 @@ namespace Utkaka.ScaleNineSlicer.UI
                 {
                     var baseTileSize = new Vector2(spriteSize.x - spriteBorder.x - spriteBorder.z,
                         spriteSize.y - spriteBorder.y - spriteBorder.w);
-                    var tileSize = slicedImage.slicedTileSize == Vector2.zero ? 
+                    var tileSize = slicedImage.slicedTileSize == Vector2Int.zero ? 
                         baseTileSize : slicedImage.slicedTileSize;
                     tileSize.x = Math.Max(1.0f, tileSize.x);
                     tileSize.y = Math.Max(1.0f, tileSize.y);
@@ -109,27 +111,21 @@ namespace Utkaka.ScaleNineSlicer.UI
                     }
                 }
             }
-            
-            Debug.Log(VertexCountPerTile);
 
             if (tiled)
             {
                 var canRepeatTiles = slicedImage.activeSprite.texture.wrapMode == TextureWrapMode.Repeat;
                 var tileSpacing = slicedImage.tileSpacing;
-                var canRepeatX = canRepeatTiles && Mathf.Approximately(tileSpacing.x,  0.0f) 
+                var canRepeatX = canRepeatTiles && tileSpacing.x ==  0 
                                                 && Mathf.Approximately(TileSize.x, spriteSize.x)
                                                 && VertexCountPerTile.x == 2;
-                var canRepeatY = canRepeatTiles && Mathf.Approximately(tileSpacing.y,  0.0f) 
+                var canRepeatY = canRepeatTiles && tileSpacing.y == 0
                                                 && Mathf.Approximately(TileSize.y, spriteSize.y)
                                                 && VertexCountPerTile.y == 2;
-
-                if (!canRepeatTiles)
-                {
-                    TileSize /= multipliedPixelsPerUnit;
-                }
                 
                 if (!canRepeatX)
                 {
+                    TileSize.x /= multipliedPixelsPerUnit;
                     TilesCount.x = Mathf.CeilToInt(FullRect.size.x / TileSize.x);
                     CutTop = TilesCount.x * TileSize.x > FullRect.width;
                 }
@@ -141,6 +137,7 @@ namespace Utkaka.ScaleNineSlicer.UI
 
                 if (!canRepeatY)
                 {
+                    TileSize.y /= multipliedPixelsPerUnit;
                     TilesCount.y = Mathf.CeilToInt(FullRect.size.y / TileSize.y);
                     CutRight = TilesCount.y * TileSize.y > FullRect.height;
                 }

@@ -30,14 +30,14 @@ namespace Utkaka.ScaleNineSlicer.UI
         [SerializeField]
         private bool _tileScaledSlices;
         [SerializeField]
-        private Vector2 _slicedTileSize;
+        private Vector2Int _slicedTileSize;
         
         [SerializeField]
         private bool _tiled;
         [SerializeField]
-        private Vector2 _tileSize;
+        private Vector2Int _tileSize;
         [SerializeField]
-        private Vector2 _tileSpacing;
+        private Vector2Int _tileSpacing;
         
         [SerializeField]
         private bool _filled;
@@ -164,7 +164,7 @@ namespace Utkaka.ScaleNineSlicer.UI
             }
         }
         
-        public Vector2 slicedTileSize
+        public Vector2Int slicedTileSize
         {
             get => _slicedTileSize;
             set
@@ -182,13 +182,13 @@ namespace Utkaka.ScaleNineSlicer.UI
             set { if (Utils.SetStruct(ref _tiled, value)) SetVerticesDirty(); }
         }
         
-        public Vector2 tileSize
+        public Vector2Int tileSize
         {
             get => _tileSize;
             set { if (Utils.SetStruct(ref _tileSize, value)) SetVerticesDirty(); }
         }
         
-        public Vector2 tileSpacing
+        public Vector2Int tileSpacing
         {
             get => _tileSpacing;
             set { if (Utils.SetStruct(ref _tileSpacing, value)) SetVerticesDirty(); }
@@ -373,7 +373,7 @@ namespace Utkaka.ScaleNineSlicer.UI
             var totalVertexCount = context.VertexCountPerTile.x * context.VertexCountPerTile.y;
             if (totalVertexCount > 16000)
             {
-                Debug.LogError("Too many vertices per tile");
+                Debug.LogError($"Too many vertices per tile {totalVertexCount}");
                 return;
             }
             

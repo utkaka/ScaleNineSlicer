@@ -9,17 +9,24 @@ namespace Utkaka.ScaleNineSlicer.UI
         public static void PrepareMesh(Span<CutInputVertex> inputVertices, ReadOnlySpan<CutLine> cutLines, 
             VertexHelper vertexHelper, Color32 color, int width, int height, bool skipCenter)
         {
-            //Debug.Log($"PrepareMesh {width}x{height}");
             if (width == 0 || height == 0) return;
-            Span<CutVertex> edgeIntersections = stackalloc CutVertex[((width - 1) * height + width * (height - 1)) * cutLines.Length];
+            var edgeIntersectionsCount = ((width - 1) * height + width * (height - 1)) * cutLines.Length;
+            var edgeIntersectionsHeapArray = Utils.GetFromPoolIfNeeded<CutVertex>(edgeIntersectionsCount);
+            var edgeIntersections = edgeIntersectionsHeapArray == null ? stackalloc CutVertex[edgeIntersectionsCount] : edgeIntersectionsHeapArray.AsSpan();
+            
             for (var i = 0; i < width - 1; i++)
             {
                 for (var j = 0; j < height - 1; j++)
                 {
-                    //zDebug.Log("Process Quad");
                     if (skipCenter && i > 0 && i < width - 2 && j > 0 && j < height - 2) continue;
                     ProcessMeshQuad(inputVertices, edgeIntersections, cutLines, vertexHelper, color, width, height, i, j);
+                    edgeIntersections.Clear();
                 }
+            }
+
+            if (edgeIntersectionsHeapArray != null)
+            {
+                System.Buffers.ArrayPool<CutVertex>.Shared.Return(edgeIntersectionsHeapArray);
             }
         }
 
@@ -28,9 +35,15 @@ namespace Utkaka.ScaleNineSlicer.UI
         {
             var linesCount = cutLines.Length;
             var edgesCount = (width - 1) * height + width * (height - 1);
-            
-            Span<CutVertex> vertexBuffer1 = stackalloc CutVertex[4 + linesCount];
-            Span<CutVertex> vertexBuffer2 = stackalloc CutVertex[4 + linesCount];
+
+            var bufferSize = 4 + linesCount;
+
+            var vertexBuffer1HeapArray = Utils.GetFromPoolIfNeeded<CutVertex>(bufferSize);
+            var vertexBuffer1 = vertexBuffer1HeapArray == null ? stackalloc CutVertex[bufferSize] : vertexBuffer1HeapArray.AsSpan();
+
+            var vertexBuffer2HeapArray = Utils.GetFromPoolIfNeeded<CutVertex>(bufferSize);
+            var vertexBuffer2 = vertexBuffer2HeapArray == null ? stackalloc CutVertex[bufferSize] : vertexBuffer2HeapArray.AsSpan();
+
             var bottomLeftIndex = height * x + y;
 
             var edge1 = (2 * height - 1) * x + y;
@@ -88,6 +101,16 @@ namespace Utkaka.ScaleNineSlicer.UI
                 if (Mathf.Approximately(vertexBuffer1[0].Position.y, vertexBuffer1[i].Position.y) 
                     && Mathf.Approximately(vertexBuffer1[0].Position.y, vertexBuffer1[i + 1].Position.y)) continue;
                 vertexHelper.AddTriangle(point0, vertexBuffer1[i].VertIndex - 1, vertexBuffer1[i + 1].VertIndex - 1);
+            }
+
+            if (vertexBuffer1HeapArray != null)
+            {
+                System.Buffers.ArrayPool<CutVertex>.Shared.Return(vertexBuffer1HeapArray);
+            }
+
+            if (vertexBuffer2HeapArray != null)
+            {
+                System.Buffers.ArrayPool<CutVertex>.Shared.Return(vertexBuffer2HeapArray);
             }
         }
 

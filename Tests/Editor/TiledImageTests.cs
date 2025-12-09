@@ -58,7 +58,7 @@ namespace Utkaka.ScaleNineSlicer.Tests.Editor
             }
             if (pixelsPerUnitMultiplier != 1)
             {
-                Assert.Ignore("For some reason some of SlicedImage tiles are slightly shifted compared to UI.Image.");
+                //Assert.Ignore("For some reason some of SlicedImage tiles are slightly shifted compared to UI.Image.");
             }
             var sprite = CreateSprite(TextureWrapMode.Clamp, spriteMeshType, border);
             var image = CreateImage(sprite, preserveAspect, useSpriteMesh, fillCenter, pixelsPerUnitMultiplier, size);

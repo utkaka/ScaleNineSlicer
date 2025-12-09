@@ -371,32 +371,42 @@ namespace Utkaka.ScaleNineSlicer.UI
 
             var context = new SlicedImageMeshContext(this);
             var totalVertexCount = context.VertexCountPerTile.x * context.VertexCountPerTile.y;
-            if (totalVertexCount > 16000)
+            /*if (totalVertexCount > 65000)
             {
                 Debug.LogError($"Too many vertices per tile {totalVertexCount}");
                 return;
-            }
-            
-            //Debug.Log(UnsafeUtility.SizeOf(typeof(CutInputVertex)));
+            }*/
 
-            Span<CutInputVertex> vertices = stackalloc CutInputVertex[totalVertexCount];
+            var heapArray = Utils.GetFromPoolIfNeeded<CutInputVertex>(totalVertexCount);
+            var vertices = heapArray == null ? stackalloc CutInputVertex[totalVertexCount] : heapArray.AsSpan();
+            
             FillBaseVertices(vertices, context);
 
             var polygonsCount = GetPolygonsCount();
             for (var polygonIndex = 0; polygonIndex < polygonsCount; polygonIndex++)
             {
-                PreparePolygon(polygonIndex, context, vertices, toFill, true, true);
+                PreparePolygon(polygonIndex, context, vertices, toFill);
+            }
+
+            if (heapArray != null)
+            {
+                System.Buffers.ArrayPool<CutInputVertex>.Shared.Return(heapArray);
             }
         }
 
         private void PreparePolygon(int polygonIndex, SlicedImageMeshContext context, Span<CutInputVertex> vertices, 
-            VertexHelper toFill,
-            bool cutTilesX, bool cutTilesY)
+            VertexHelper toFill)
         {
-            var cutLinesCount = GetPolygonCutLinesCount(polygonIndex, cutTilesX, cutTilesY);
-            Span<CutLine> cuts = stackalloc CutLine[cutLinesCount];
-            FillPolygonCutLines(cuts, context.FullRect, polygonIndex, cutTilesX, cutTilesY);
-            Span<CutInputVertex> tileVertices = stackalloc CutInputVertex[vertices.Length];
+            var cutLinesCount = GetPolygonCutLinesCount(polygonIndex, context.CutRight, context.CutTop);
+            
+            var cutsHeapArray = Utils.GetFromPoolIfNeeded<CutLine>(cutLinesCount);
+            var cuts = cutsHeapArray == null ? stackalloc CutLine[cutLinesCount] : cutsHeapArray.AsSpan();
+            
+            FillPolygonCutLines(cuts, context.FullRect, polygonIndex, context.CutRight, context.CutTop);
+            
+            var tileVerticesHeapArray = Utils.GetFromPoolIfNeeded<CutInputVertex>(vertices.Length);
+            var tileVertices = cutsHeapArray == null ? stackalloc CutInputVertex[vertices.Length] : tileVerticesHeapArray.AsSpan();
+            
             for (var i = 0; i < context.TilesCount.x; i++)
             {
                 for (var j = 0; j < context.TilesCount.y; j++)
@@ -410,6 +420,15 @@ namespace Utkaka.ScaleNineSlicer.UI
                     }
                     SlicedMeshHandler.PrepareMesh(tileVertices, cuts, toFill, color, context.VertexCountPerTile.x, context.VertexCountPerTile.y, !fillCenter);
                 }
+            }
+
+            if (cutsHeapArray != null)
+            {
+                System.Buffers.ArrayPool<CutLine>.Shared.Return(cutsHeapArray);
+            }
+            if (tileVerticesHeapArray != null)
+            {
+                System.Buffers.ArrayPool<CutInputVertex>.Shared.Return(tileVerticesHeapArray);
             }
         }
 

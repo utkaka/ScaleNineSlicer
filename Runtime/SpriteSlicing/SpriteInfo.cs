@@ -153,8 +153,10 @@ namespace Utkaka.ScaleNineSlicer.SpriteSlicing {
 			var detectOpaqueRectJob = new DetectOpaqueRectJob(pixelsNativeArray, opaqueRectNativeArray, _width);
 			detectOpaqueRectJob.Schedule(_pixels.Length,default).Complete();
 			var opaqueRect = opaqueRectNativeArray[0];
-			opaqueRect.z = opaqueRect.z - opaqueRect.x + 1;
-			opaqueRect.w = opaqueRect.w - opaqueRect.y + 1;
+			opaqueRect.x = Mathf.Max(0, opaqueRect.x - 1);
+			opaqueRect.y = Mathf.Max(0, opaqueRect.y - 1);
+			opaqueRect.z = Mathf.Min(_width, opaqueRect.z - opaqueRect.x + 2);
+			opaqueRect.w = Mathf.Min(_height, opaqueRect.w - opaqueRect.y + 2);
 
 			var trimmedPixelsCount = opaqueRect.z * opaqueRect.w;
 			var trimmedPixels = new NativeArray<Color>(trimmedPixelsCount, Allocator.TempJob);

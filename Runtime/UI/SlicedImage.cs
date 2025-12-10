@@ -480,34 +480,35 @@ namespace Utkaka.ScaleNineSlicer.UI
 
         private void FillPolygonCutLines(Span<CutLine> cutLines, Rect rect, int polygonIndex, bool cutTilesX, bool cutTilesY)
         {
+            var lineIndex = 0;
             if (cutTilesX)
             {
-                cutLines[^1] = new CutLine(rect.max, Vector2.left);
+                cutLines[lineIndex++] = new CutLine(rect.max, Vector2.left);
             }
             if (cutTilesY)
             {
-                cutLines[^2] = new CutLine(rect.max, Vector2.down);
+                cutLines[lineIndex++] = new CutLine(rect.max, Vector2.down);
             }
             if (!filled || Mathf.Approximately(fillAmount, 1.0f)) return;
             switch (fillMethod)
             {
                 case FillMethod.Horizontal:
-                    FillHorizontalCutLine(cutLines, rect);
+                    FillHorizontalCutLine(cutLines[lineIndex..], rect);
                     break;
                 case FillMethod.Vertical:
-                    FillVerticalCutLine(cutLines, rect);
+                    FillVerticalCutLine(cutLines[lineIndex..], rect);
                     break;
                 case FillMethod.Radial90:
-                    FillRadial90CutLine(cutLines, rect, fillOrigin, fillAmount, fillClockwise);
+                    FillRadial90CutLine(cutLines[lineIndex..], rect, fillOrigin, fillAmount, fillClockwise);
                     break;
                 case FillMethod.Radial180:
-                    FillRadial180CutLine(cutLines, rect, fillOrigin, fillAmount, fillClockwise);
+                    FillRadial180CutLine(cutLines[lineIndex..], rect, fillOrigin, fillAmount, fillClockwise);
                     break;
                 case FillMethod.Radial360:
-                    FillRadial360CutLine(cutLines, rect, polygonIndex, fillOrigin, fillAmount, fillClockwise);
+                    FillRadial360CutLine(cutLines[lineIndex..], rect, polygonIndex, fillOrigin, fillAmount, fillClockwise);
                     break;
                 case FillMethod.Custom:
-                    customFilling?.FillPolygonCutLines(cutLines, fillAmount, rect, polygonIndex);
+                    customFilling?.FillPolygonCutLines(cutLines[lineIndex..], fillAmount, rect, polygonIndex);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

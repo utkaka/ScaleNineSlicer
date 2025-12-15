@@ -1,13 +1,20 @@
 {
   "name": "com.utkaka.scale-nine-slicer",
   "version": "1.0.3",
-  "displayName": "Scale Nine Slicer",
+  "displayName": "SlicedImage",
   "description": "A tool for automating work with 9 slice scaling in Unity.",
-  "unity": "2019.3",
-  "unityRelease": "1f1",
+  "unity": "2021.3",
+  "unityRelease": "45f2",
   "dependencies": {
     "com.unity.mathematics": "1.0.1"
   },
+  "samples": [
+    {
+      "displayName": "Samples",
+      "description": "Scene with samples & custom filling sample",
+      "path": "Samples~"
+    }
+  ],
   "author": {
     "name": "Anton Alexeyev",
     "email": "alexeyev.anton@gmail.com"

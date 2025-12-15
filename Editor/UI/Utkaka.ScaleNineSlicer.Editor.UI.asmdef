@@ -1,0 +1,19 @@
+{
+    "name": "Utkaka.ScaleNineSlicer.Editor.UI",
+    "rootNamespace": "Utkaka.ScaleNineSlicer.Editor",
+    "references": [
+        "GUID:20e2c3d5a514348c186230559fb54725",
+        "GUID:fad6f1633be04d7da950032a41210948"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace Utkaka.ScaleNineSlicer.Tests.Editor
 {
-    public class TiledImageTests : AbstractImageTest
+    public class TiledVisualImageTests : AbstractVisualImageTest
     {
         private static readonly Vector4[] OverrideBorder = { Vector4.zero, new(15f, 15f, 15f, 20f) };
         

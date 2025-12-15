@@ -3,11 +3,12 @@ using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.UI;
+using Utkaka.ScaleNineSlicer.Tests.Runtime;
 using Utkaka.ScaleNineSlicer.UI;
 
 namespace Utkaka.ScaleNineSlicer.Tests.Editor
 {
-    public abstract class AbstractImageTest
+    public abstract class AbstractVisualImageTest : AbstractImageTest
     {
         protected static readonly TextureWrapMode[] WrapMode = { TextureWrapMode.Clamp, TextureWrapMode.Repeat };
         protected static readonly SpriteMeshType[] MeshType = { SpriteMeshType.FullRect, SpriteMeshType.Tight };
@@ -18,59 +19,6 @@ namespace Utkaka.ScaleNineSlicer.Tests.Editor
         protected static readonly bool[] FillCenter = { true, false };
         protected static readonly int[] PixelsPerUnitMultiplier = { 1, 2 };
         
-        private Camera _camera;
-        private Canvas _canvas;
-        private Sprite _sprite;
-    
-        [SetUp]
-        public void SetUp()
-        {
-            _camera = new GameObject("UICamera", typeof(Camera)).GetComponent<Camera>();
-            _camera.gameObject.hideFlags = HideFlags.HideAndDontSave;
-            _camera.orthographic = true;
-            _camera.clearFlags = CameraClearFlags.SolidColor;
-            _camera.backgroundColor = Color.black;
-
-            _canvas = new GameObject("Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster)).GetComponent<Canvas>();
-            _canvas.gameObject.hideFlags = HideFlags.HideAndDontSave;
-            _canvas.renderMode = RenderMode.ScreenSpaceCamera;
-            _canvas.worldCamera = _camera;
-            _canvas.pixelPerfect = false;
-
-            var scaler = _canvas.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
-            scaler.scaleFactor = 1.0f;
-            scaler.referencePixelsPerUnit = 100.0f;
-
-            _sprite = Resources.Load<Sprite>("Test");
-        }
-    
-        [TearDown]
-        public void TearDown()
-        {
-            if (_canvas != null)
-                Object.DestroyImmediate(_canvas.gameObject);
-            if (_camera != null)
-                Object.DestroyImmediate(_camera.gameObject);
-            if (_sprite != null)
-                Resources.UnloadAsset(_sprite);
-        }
-        
-        protected Sprite CreateSprite(TextureWrapMode wrapMode, SpriteMeshType spriteMeshType, Vector4 border)
-        {
-            var texture = Object.Instantiate(_sprite.texture);
-            texture.wrapMode = wrapMode;
-            return Sprite.Create(
-                texture,
-                _sprite.rect,
-                _sprite.pivot,
-                _sprite.pixelsPerUnit,
-                0,
-                spriteMeshType,
-                border
-            );
-        }
-
         protected void DestroyImages(Sprite sprite, Image image, SlicedImage slicedImage)
         {
             Object.DestroyImmediate(image);
@@ -122,52 +70,16 @@ namespace Utkaka.ScaleNineSlicer.Tests.Editor
             Object.DestroyImmediate(slicedImageSnapshot);
         }
         
-        protected Image CreateImage(Sprite sprite, bool preserveAspect, bool useSpriteMesh, bool fillCenter, int pixelsPerUnitMultiplier, Vector2Int size)
-        {
-            var transform = CreateImageTransform(size);
-            var image = transform.gameObject.AddComponent<ImageWithMeshStatistics>();
-            image.sprite = sprite;
-            image.preserveAspect = preserveAspect;
-            image.useSpriteMesh = useSpriteMesh;
-            image.fillCenter = fillCenter;
-            image.pixelsPerUnitMultiplier = pixelsPerUnitMultiplier;
-            return image;
-        }
-        
-        protected SlicedImage CreateSlicedImage(Sprite sprite, bool preserveAspect, bool useSpriteMesh, bool fillCenter, int pixelsPerUnitMultiplier, Vector2Int size)
-        {
-            var transform = CreateImageTransform(size);
-            var image = transform.gameObject.AddComponent<SlicedImageWithMeshStatistics>();
-            image.sprite = sprite;
-            image.preserveAspect = preserveAspect;
-            image.useSpriteMesh = useSpriteMesh;
-            image.fillCenter = fillCenter;
-            image.pixelsPerUnitMultiplier = pixelsPerUnitMultiplier;
-            return image;
-        }
-
-        private RectTransform CreateImageTransform(Vector2Int size)
-        {
-            var rect = new GameObject("Image", typeof(RectTransform)).GetComponent<RectTransform>();
-            rect.gameObject.hideFlags = HideFlags.HideAndDontSave;
-            rect.SetParent(_canvas.transform, false);
-            rect.sizeDelta = size;
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = Vector2.zero;
-
-            return rect;
-        }
-        
         private Texture2D RenderImageSnapshot(Vector2Int size)
         {
             size += new Vector2Int(10, 10);
             var rt = new RenderTexture(size.x, size.y, 24, RenderTextureFormat.ARGB32);
             var prevActive = RenderTexture.active;
-            var prevTarget = _camera.targetTexture;
-            _camera.targetTexture = rt;
+            var prevTarget = Camera.targetTexture;
+            Camera.targetTexture = rt;
             RenderTexture.active = rt;
 
-            _camera.Render();
+            Camera.Render();
 
             var snapshot = new Texture2D(size.x, size.y, TextureFormat.RGBA32, 0, true);
             snapshot.ReadPixels(new Rect(0, 0, size.x, size.y), 0, 0);
@@ -175,7 +87,7 @@ namespace Utkaka.ScaleNineSlicer.Tests.Editor
             snapshot.hideFlags = HideFlags.HideAndDontSave;
 
             RenderTexture.active = prevActive;
-            _camera.targetTexture = prevTarget;
+            Camera.targetTexture = prevTarget;
             rt.Release();
             Object.DestroyImmediate(rt);
             return snapshot;

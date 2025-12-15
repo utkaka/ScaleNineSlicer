@@ -151,7 +151,7 @@ namespace Utkaka.ScaleNineSlicer.UI
                     var intersection = GetIntersection(
                         point1, point2, edgeIntersections, edgesCount, cutLine, lineIndex
                     );
-                    if (!Vector2.Equals(intersection.Position, point1.Position))
+                    if (!intersection.Position.Equals(point1.Position))
                     {
                         outputBuffer[vertexCount++] = intersection;   
                     }
@@ -162,7 +162,7 @@ namespace Utkaka.ScaleNineSlicer.UI
                         point1, point2, edgeIntersections, edgesCount, cutLine, lineIndex
                     );
                     outputBuffer[vertexCount++] = intersection;
-                    if (!Vector2.Equals(intersection.Position, point2.Position))
+                    if (!intersection.Position.Equals(point2.Position))
                     {
                         outputBuffer[vertexCount++] = point2;   
                     }

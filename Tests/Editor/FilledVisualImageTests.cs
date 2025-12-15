@@ -5,7 +5,7 @@ using Utkaka.ScaleNineSlicer.UI;
 
 namespace Utkaka.ScaleNineSlicer.Tests.Editor
 {
-    public class FilledImageTests : AbstractImageTest
+    public class FilledVisualImageTests : AbstractVisualImageTest
     {
         private static readonly int[] AxisOrigins = { 0, 1 };
         private static readonly int[] RadialOrigins = { 0, 1, 2, 3 };

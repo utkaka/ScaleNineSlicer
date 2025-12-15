@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace Utkaka.ScaleNineSlicer.Tests.Editor
 {
-    public class SlicedImageTests : AbstractImageTest
+    public class SlicedVisualImageTests : AbstractVisualImageTest
     {
          [Test]
          public void SlicedImage(

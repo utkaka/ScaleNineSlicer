@@ -1,6 +1,6 @@
 {
   "name": "com.utkaka.scale-nine-slicer",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "displayName": "SlicedImage",
   "description": "A tool for automating work with 9 slice scaling in Unity.",
   "unity": "2021.3",

@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/utkaka/ScaleNineSlicer/compare/v1.0.3...v1.0.4) (2025-12-15)
+
+
+### Bug Fixes
+
+* checker references in uxml ([2c4ffe7](https://github.com/utkaka/ScaleNineSlicer/commit/2c4ffe7bf519dc7629128f936eb70717bce39ce1))
+
 ## [1.0.3](https://github.com/utkaka/ScaleNineSlicer/compare/v1.0.2...v1.0.3) (2023-08-15)
 
 

@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/utkaka/ScaleNineSlicer/compare/v2.0.0...v2.0.1) (2025-12-24)
+
+
+### Bug Fixes
+
+* performance improvements ([9331a4f](https://github.com/utkaka/ScaleNineSlicer/commit/9331a4f86091d1512a08504d9c8a544340fc7561))
+
 # [2.0.0](https://github.com/utkaka/ScaleNineSlicer/compare/v1.0.4...v2.0.0) (2025-12-15)
 
 

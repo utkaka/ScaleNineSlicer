@@ -1,3 +1,15 @@
+# [2.0.0](https://github.com/utkaka/ScaleNineSlicer/compare/v1.0.4...v2.0.0) (2025-12-15)
+
+
+### Features
+
+* add SlicedImage component ([f867f41](https://github.com/utkaka/ScaleNineSlicer/commit/f867f41e174d88451914d6af305faffb318ee0d3))
+
+
+### BREAKING CHANGES
+
+* package has been slightly refactored
+
 ## [1.0.4](https://github.com/utkaka/ScaleNineSlicer/compare/v1.0.3...v1.0.4) (2025-12-15)
 
 

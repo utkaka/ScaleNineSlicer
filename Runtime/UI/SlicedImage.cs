@@ -1,6 +1,4 @@
 using System;
-using Unity.Collections.LowLevel.Unsafe;
-using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Sprites;
 using UnityEngine.UI;
@@ -369,6 +367,14 @@ namespace Utkaka.ScaleNineSlicer.UI
             return alphaHitTestMinimumThreshold <= 1.0f;
         }
         
+        public new Rect GetPixelAdjustedRect()
+        {
+            var localCanvas = canvas;
+            if (!localCanvas || localCanvas.renderMode == RenderMode.WorldSpace || localCanvas.scaleFactor == 0.0f || !localCanvas.pixelPerfect)
+                return rectTransform.rect;
+            return RectTransformUtility.PixelAdjustRect(rectTransform, localCanvas);
+        }
+        
         protected override void OnPopulateMesh(VertexHelper toFill)
         {
             if (activeSprite == null)
@@ -401,23 +407,23 @@ namespace Utkaka.ScaleNineSlicer.UI
             var heapArray = Utils.GetFromPoolIfNeeded<CutInputVertex>(totalVertexCount);
             var vertices = heapArray == null ? stackalloc CutInputVertex[totalVertexCount] : heapArray.AsSpan();
             
-            FillBaseVertices(vertices, context);
+            FillBaseVertices(vertices, in context);
 
             var polygonsCount = GetPolygonsCount();
+            var meshVertexCount = 0;
             for (var polygonIndex = 0; polygonIndex < polygonsCount; polygonIndex++)
             {
-                PreparePolygon(polygonIndex, context, vertices, toFill);
+                PreparePolygon(polygonIndex, in context, vertices, toFill, ref meshVertexCount);
             }
-
-            if (heapArray != null)
-            {
-                System.Buffers.ArrayPool<CutInputVertex>.Shared.Return(heapArray);
-            }
+            
+            Utils.ReturnToPool(vertices.Length, heapArray);
         }
 
-        private void PreparePolygon(int polygonIndex, SlicedImageMeshContext context, Span<CutInputVertex> vertices, 
-            VertexHelper toFill)
+        private void PreparePolygon(int polygonIndex, in SlicedImageMeshContext context, Span<CutInputVertex> vertices, 
+            VertexHelper toFill, ref int meshVertexCount)
         {
+            var rectTransformComponent = rectTransform;
+            var parentCanvas = canvas;
             var cutLinesCount = GetPolygonCutLinesCount(polygonIndex, context.CutRight, context.CutTop);
             
             var cutsHeapArray = Utils.GetFromPoolIfNeeded<CutLine>(cutLinesCount);
@@ -436,21 +442,15 @@ namespace Utkaka.ScaleNineSlicer.UI
                     for (var v = 0; v < vertices.Length; v++)
                     {
                         var vertex = vertices[v];
-                        vertex.Position = RectTransformUtility.PixelAdjustPoint(vertex.Position + tileShift, rectTransform, canvas);
+                        vertex.Position = RectTransformUtility.PixelAdjustPoint(vertex.Position + tileShift, rectTransformComponent, parentCanvas);
                         tileVertices[v] = vertex;
                     }
-                    SlicedMeshHandler.PrepareMesh(tileVertices, cuts, toFill, color, context.VertexCountPerTile.x, context.VertexCountPerTile.y, !fillCenter);
+                    SlicedMeshHandler.PrepareMesh(tileVertices, cuts, toFill, color, context.VertexCountPerTile.x, context.VertexCountPerTile.y, !fillCenter, ref meshVertexCount);
                 }
             }
-
-            if (cutsHeapArray != null)
-            {
-                System.Buffers.ArrayPool<CutLine>.Shared.Return(cutsHeapArray);
-            }
-            if (tileVerticesHeapArray != null)
-            {
-                System.Buffers.ArrayPool<CutInputVertex>.Shared.Return(tileVerticesHeapArray);
-            }
+            
+            Utils.ReturnToPool(cuts.Length, cutsHeapArray);
+            Utils.ReturnToPool(tileVertices.Length, tileVerticesHeapArray);
         }
 
         private int GetPolygonsCount()
@@ -458,7 +458,7 @@ namespace Utkaka.ScaleNineSlicer.UI
             if (fillMethod == FillMethod.Custom && customFilling != null)
                 return customFilling.GetPolygonsCount(fillAmount);
             if (!filled || fillMethod != FillMethod.Radial360) return 1;
-            return fillAmount <= 0.5f || Mathf.Approximately(fillAmount, 1.0f) ? 1 : 2;
+            return fillAmount <= 0.5f || Mathf.Abs(fillAmount - 1.0f) <= Mathf.Epsilon ? 1 : 2;
         }
 
         private int GetPolygonCutLinesCount(int polygonIndex, bool cutTilesX, bool cutTilesY)
@@ -472,7 +472,7 @@ namespace Utkaka.ScaleNineSlicer.UI
                     ? baseCutLineCount
                     : customFilling.GetPolygonCutLinesCount(polygonIndex, fillAmount) + baseCutLineCount;
             }
-            if (!filled || Mathf.Approximately(fillAmount, 1.0f)) return baseCutLineCount;
+            if (!filled || Mathf.Abs(fillAmount - 1.0f) <= Mathf.Epsilon) return baseCutLineCount;
             if (fillMethod != FillMethod.Radial360 || polygonIndex == 0 && fillAmount >= 0.5f) return baseCutLineCount + 1;
             return baseCutLineCount + 2;
         }
@@ -489,7 +489,7 @@ namespace Utkaka.ScaleNineSlicer.UI
             {
                 cutLines[lineIndex++] = new CutLine(rect.max, Vector2.down);
             }
-            if (!filled || Mathf.Approximately(fillAmount, 1.0f)) return;
+            if (!filled || Mathf.Abs(fillAmount - 1.0f) <= Mathf.Epsilon) return;
             switch (fillMethod)
             {
                 case FillMethod.Horizontal:
@@ -648,17 +648,30 @@ namespace Utkaka.ScaleNineSlicer.UI
         
         private static void FillRadial90CutLine(Span<CutLine> cutLines, Rect rect, int origin, float amount, bool clockwise)
         {
-            
-            var vertices = new float2x4
-            {
-                [0] = rect.position,
-                [1] = new Vector2(rect.xMin, rect.yMax),
-                [2] = new Vector2(rect.xMax, rect.yMax),
-                [3] = new Vector2(rect.xMax, rect.yMin)
-            };
+            origin %= 4;
+            var center = Vector2.zero;
+            var corner = Vector2.zero;
 
-            var center = vertices[origin];
-            var corner = vertices[(origin + 2) % 4];
+            switch (origin)
+            {
+                case 0:
+                    center = rect.position;
+                    corner = new Vector2(rect.xMax, rect.yMax);
+                    break;
+                case 1:
+                    center =  new Vector2(rect.xMin, rect.yMax);
+                    corner = new Vector2(rect.xMax, rect.yMin);
+                    break;
+                case 2:
+                    center = new Vector2(rect.xMax, rect.yMax);
+                    corner = rect.position;
+                    break;
+                case 3:
+                    center = new Vector2(rect.xMax, rect.yMin);
+                    corner = new Vector2(rect.xMin, rect.yMax);
+                    break;
+            }
+
             var fill = (origin & 1) == 1 ? 1.0f - amount : amount;
             if (clockwise)
             {
@@ -695,12 +708,13 @@ namespace Utkaka.ScaleNineSlicer.UI
             return result;
         }
         
-        private void FillBaseVertices(Span<CutInputVertex> vertices, SlicedImageMeshContext context)
+        private void FillBaseVertices(Span<CutInputVertex> vertices, in SlicedImageMeshContext context)
         {
-            var adjustedPixelsPerUnit = multipliedPixelsPerUnit;
-            var outerUV = DataUtility.GetOuterUV(activeSprite);
-            var innerUV = DataUtility.GetInnerUV(activeSprite);
-            var padding = DataUtility.GetPadding(activeSprite) / adjustedPixelsPerUnit;
+            var localActiveSprite = activeSprite;
+            var adjustedPixelsPerUnit = context.MultipliedPixelsPerUnit;
+            var outerUV = DataUtility.GetOuterUV(localActiveSprite);
+            var innerUV = DataUtility.GetInnerUV(localActiveSprite);
+            var padding = DataUtility.GetPadding(localActiveSprite) / adjustedPixelsPerUnit;
             var position = context.FullRect.position;
             
             var position1 = new Vector2(padding.x, padding.y) + position;
@@ -818,7 +832,7 @@ namespace Utkaka.ScaleNineSlicer.UI
             {
                 _cachedReferencePixelsPerUnit = 100;
             }
-            else if (!Mathf.Approximately(canvas.referencePixelsPerUnit, _cachedReferencePixelsPerUnit))
+            else if (!(Mathf.Abs(canvas.referencePixelsPerUnit - _cachedReferencePixelsPerUnit) <= Mathf.Epsilon))
             {
                 _cachedReferencePixelsPerUnit = canvas.referencePixelsPerUnit;
                 if (_sliced || _tiled)

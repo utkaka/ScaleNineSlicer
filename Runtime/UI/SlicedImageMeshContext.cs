@@ -3,20 +3,21 @@ using UnityEngine;
 
 namespace Utkaka.ScaleNineSlicer.UI
 {
-    public struct SlicedImageMeshContext
+    public readonly struct SlicedImageMeshContext
     {
-        public Rect FullRect;
+        public readonly Rect FullRect;
         
-        public Vector2Int VertexCountPerTile;
-        public Vector4 Borders;
-        public Vector2 InnerTileSize;
-        public Vector2Int InnerTilesCount;
+        public readonly Vector2Int VertexCountPerTile;
+        public readonly Vector4 Borders;
+        public readonly Vector2 InnerTileSize;
+        public readonly Vector2Int InnerTilesCount;
         
-        public bool CutTop;
-        public bool CutRight;
-        public Vector2 TileSize;
-        public Vector2Int TilesCount;
-        public Vector2 TopRightUVMultiplier;
+        public readonly Vector2 TileSize;
+        public readonly Vector2Int TilesCount;
+        public readonly Vector2 TopRightUVMultiplier;
+        public readonly float MultipliedPixelsPerUnit;
+        public readonly bool CutTop;
+        public readonly bool CutRight;
 
         public SlicedImageMeshContext(SlicedImage slicedImage)
         {
@@ -43,22 +44,22 @@ namespace Utkaka.ScaleNineSlicer.UI
 
             sliced &= slicedImage.hasBorder;
             
-            var multipliedPixelsPerUnit = slicedImage.multipliedPixelsPerUnit;
+            MultipliedPixelsPerUnit = slicedImage.multipliedPixelsPerUnit;
             var tileMultipliedPixelsPerUnit = 1.0f;
 
             if (tiled)
             {
                 TileSize = slicedImage.tileSize != Vector2.zero ? slicedImage.tileSize : spriteSize;
                 transformRect.size = TileSize;
-                tileMultipliedPixelsPerUnit = multipliedPixelsPerUnit;
+                tileMultipliedPixelsPerUnit = MultipliedPixelsPerUnit;
             }
             if (sliced)
             {
-                var canSimplifyMesh = slicedImage.fillCenter && Mathf.Approximately(multipliedPixelsPerUnit, 1.0f);
+                var canSimplifyMesh = slicedImage.fillCenter && Mathf.Abs(MultipliedPixelsPerUnit - 1.0f) <= Mathf.Epsilon;
                 var spriteBorder = slicedImage.activeSprite.border;
 
                 var adjustedRect = new Rect(FullRect.position, TileSize / tileMultipliedPixelsPerUnit);
-                Borders = Utils.GetAdjustedBorders(spriteBorder / multipliedPixelsPerUnit, 
+                Borders = Utils.GetAdjustedBorders(spriteBorder / MultipliedPixelsPerUnit, 
                     transformRect, adjustedRect);
                 
                 var position2 = new Vector2(Borders.x, Borders.y);
@@ -74,23 +75,23 @@ namespace Utkaka.ScaleNineSlicer.UI
                         baseTileSize : slicedImage.slicedTileSize;
                     tileSize.x = Math.Max(1.0f, tileSize.x);
                     tileSize.y = Math.Max(1.0f, tileSize.y);
-                    tileSize /= multipliedPixelsPerUnit;
+                    tileSize /= MultipliedPixelsPerUnit;
                     InnerTileSize = tileSize;
-                    if (!Mathf.Approximately(adjustedRect.width, spriteSize.x) || !canSimplifyMesh)
+                    if (!(Mathf.Abs(adjustedRect.width - spriteSize.x) <= Mathf.Epsilon) || !(Mathf.Abs(tileSize.x - baseTileSize.x) <= Mathf.Epsilon) || !canSimplifyMesh)
                     {
                         InnerTilesCount.x = Mathf.CeilToInt(scaledPartSize.x / tileSize.x);
                         VertexCountPerTile.x = InnerTilesCount.x * 2 + 2;
-                        if (!Mathf.Approximately(scaledPartSize.x % tileSize.x, 0.0f))
+                        if (!(scaledPartSize.x % tileSize.x <= Mathf.Epsilon))
                         {
                             VertexCountPerTile.x += 1;
                         }
                     }
 
-                    if (!Mathf.Approximately(adjustedRect.height, spriteSize.y) || !canSimplifyMesh)
+                    if (!(Mathf.Abs(adjustedRect.height - spriteSize.y) <= Mathf.Epsilon) || !(Mathf.Abs(tileSize.y - baseTileSize.y) <= Mathf.Epsilon) || !canSimplifyMesh)
                     {
                         InnerTilesCount.y = Mathf.CeilToInt(scaledPartSize.y / tileSize.y);
                         VertexCountPerTile.y = InnerTilesCount.y * 2 + 2;
-                        if (!Mathf.Approximately(scaledPartSize.y % tileSize.y, 0.0f))
+                        if (!(scaledPartSize.y % tileSize.y <= Mathf.Epsilon))
                         {
                             VertexCountPerTile.y += 1;
                         }
@@ -98,13 +99,13 @@ namespace Utkaka.ScaleNineSlicer.UI
                 }
                 else
                 {
-                    if (!Mathf.Approximately(adjustedRect.width, spriteSize.x) || !canSimplifyMesh)
+                    if (!(Mathf.Abs(adjustedRect.width - spriteSize.x) <= Mathf.Epsilon) || !canSimplifyMesh)
                     {
                         VertexCountPerTile.x = 4;
                         InnerTilesCount.x = 1;
                     }
 
-                    if (!Mathf.Approximately(adjustedRect.height, spriteSize.y) || !canSimplifyMesh)
+                    if (!(Mathf.Abs(adjustedRect.height - spriteSize.y) <= Mathf.Epsilon) || !canSimplifyMesh)
                     {
                         VertexCountPerTile.y = 4;
                         InnerTilesCount.y = 1;
@@ -117,33 +118,33 @@ namespace Utkaka.ScaleNineSlicer.UI
                 var canRepeatTiles = slicedImage.activeSprite.texture.wrapMode == TextureWrapMode.Repeat;
                 var tileSpacing = slicedImage.tileSpacing;
                 var canRepeatX = canRepeatTiles && tileSpacing.x ==  0 
-                                                && Mathf.Approximately(TileSize.x, spriteSize.x)
+                                                && Mathf.Abs(TileSize.x - spriteSize.x) <= Mathf.Epsilon
                                                 && VertexCountPerTile.x == 2;
                 var canRepeatY = canRepeatTiles && tileSpacing.y == 0
-                                                && Mathf.Approximately(TileSize.y, spriteSize.y)
+                                                && Mathf.Abs(TileSize.y - spriteSize.y) <= Mathf.Epsilon
                                                 && VertexCountPerTile.y == 2;
                 
                 if (!canRepeatX)
                 {
-                    TileSize.x /= multipliedPixelsPerUnit;
+                    TileSize.x /= MultipliedPixelsPerUnit;
                     TilesCount.x = Mathf.CeilToInt(FullRect.size.x / TileSize.x);
                     CutRight = TilesCount.x * TileSize.x + (TilesCount.x - 1) * tileSpacing.x > FullRect.width;
                 }
                 else
                 {
-                    TopRightUVMultiplier.x = FullRect.width * multipliedPixelsPerUnit / TileSize.x;
+                    TopRightUVMultiplier.x = FullRect.width * MultipliedPixelsPerUnit / TileSize.x;
                     TileSize.x = FullRect.size.x;
                 }
 
                 if (!canRepeatY)
                 {
-                    TileSize.y /= multipliedPixelsPerUnit;
+                    TileSize.y /= MultipliedPixelsPerUnit;
                     TilesCount.y = Mathf.CeilToInt(FullRect.size.y / TileSize.y);
                     CutTop = TilesCount.y * TileSize.y + (TilesCount.y - 1) * tileSpacing.y > FullRect.height;
                 }
                 else
                 {
-                    TopRightUVMultiplier.y = FullRect.height * multipliedPixelsPerUnit / TileSize.y;
+                    TopRightUVMultiplier.y = FullRect.height * MultipliedPixelsPerUnit / TileSize.y;
                     TileSize.y = FullRect.size.y;
                 }
             }

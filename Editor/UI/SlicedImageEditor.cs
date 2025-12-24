@@ -1,4 +1,3 @@
-using System.Linq;
 using UnityEditor;
 using UnityEditor.AnimatedValues;
 using UnityEditor.UI;
@@ -185,7 +184,8 @@ namespace Utkaka.ScaleNineSlicer.Editor.UI
             {
                 EditorGUILayout.PropertyField(_fillCenterProperty);
                 EditorGUILayout.PropertyField(_tileScaledSlicesProperty);
-                EditorGUILayout.PropertyField(_slicedTileSizeProperty);
+                DrawDisablableProperty(!_tileScaledSlicesProperty.boolValue, 
+                    _slicedTileSizeProperty, "You need to enable tiling of scaled slices.");
             }
             EditorGUI.indentLevel--;
             EditorGUILayout.EndFadeGroup();

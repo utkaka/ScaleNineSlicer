@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
@@ -11,9 +10,17 @@ namespace Utkaka.ScaleNineSlicer.UI
         
         public static T[] GetFromPoolIfNeeded<T>(int length) where T : struct
         {
-            //return null;
-            var size = UnsafeUtility.SizeOf<T>();
-            return length * size <= MaximumStackSize ? null : System.Buffers.ArrayPool<T>.Shared.Rent(length);
+            var size = UnsafeUtility.SizeOf<T>() * length;
+            if (size <= MaximumStackSize) return null;
+            return System.Buffers.ArrayPool<T>.Shared.Rent(length);
+        }
+        
+        public static void ReturnToPool<T>(int length, T[] buffer) where T : struct
+        {
+            if (buffer != null)
+            {
+                System.Buffers.ArrayPool<T>.Shared.Return(buffer);
+            }
         }
         
         public static bool SetColor(ref Color currentValue, Color newValue)

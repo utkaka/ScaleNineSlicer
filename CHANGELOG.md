@@ -1,3 +1,10 @@
+## [2.0.2](https://github.com/utkaka/ScaleNineSlicer/compare/v2.0.1...v2.0.2) (2025-12-26)
+
+
+### Bug Fixes
+
+* uxml errors ([8413dcc](https://github.com/utkaka/ScaleNineSlicer/commit/8413dcc05bd5fdce72cd4350675bfa6be3b8d99d))
+
 ## [2.0.1](https://github.com/utkaka/ScaleNineSlicer/compare/v2.0.0...v2.0.1) (2025-12-24)
 
 

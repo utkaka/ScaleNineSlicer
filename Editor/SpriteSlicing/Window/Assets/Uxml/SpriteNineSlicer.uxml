@@ -1,5 +1,5 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="True">
-    <Style src="project://database/Assets/SpriteNineSlice/Assets/Uxml/SpriteNineSlicer.uss?fileID=7433441132597879392&amp;guid=ebe5815569ba44fd293aecda111fcb9e&amp;type=3#SpriteNineSlicer" />
+    <Style src="project://database/Packages/com.utkaka.scale-nine-slicer/Editor/SpriteSlicing/Window/Assets/Uxml/SpriteNineSlicer.uss?fileID=7433441132597879392&amp;guid=ebe5815569ba44fd293aecda111fcb9e&amp;type=3#SpriteNineSlicer" />
     <uie:Toolbar>
         <uie:ToolbarToggle focusable="false" name="Borders" label="Borders" style="width: 65px;" />
         <uie:ToolbarToggle focusable="false" name="Preview" label="Preview" style="width: 65px;" />

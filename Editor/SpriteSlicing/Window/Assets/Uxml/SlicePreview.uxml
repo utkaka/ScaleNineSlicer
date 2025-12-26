@@ -1,7 +1,7 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
     <ui:ScrollView name="Container" mode="VerticalAndHorizontal" class="main-area">
         <ui:VisualElement name="Area" style="width: 100px; height: 100px;">
-            <Utkaka.ScaleNineSlicer.Editor.SpriteSlicing.Window.TiledImageElement name="ImageBackground" style="width: 100%; height: 100%; background-image: url(&apos;project://database/Packages/com.utkaka.scale-nine-slicer/Editor/SpriteSlicing/Window/Assets/Sprites/checker.png'. Update the URL 'project://database/Packages/com.utkaka.scale-nine-slicer/Editor/Window/Assets/Sprites/checker.png?fileID=21300000&guid=85f4ca9a37a3147b98a30d7305952ce7&type=3#checker&apos;); position: absolute;">
+            <Utkaka.ScaleNineSlicer.Editor.SpriteSlicing.Window.TiledImageElement name="ImageBackground" style="width: 100%; height: 100%; background-image: url(&apos;project://database/Packages/com.utkaka.scale-nine-slicer/Editor/SpriteSlicing/Window/Assets/Sprites/checker.png&apos;); position: absolute;">
                 <ui:VisualElement name="Image" style="background-image: none; width: auto; height: auto; flex-grow: 1;" />
             </Utkaka.ScaleNineSlicer.Editor.SpriteSlicing.Window.TiledImageElement>
         </ui:VisualElement>

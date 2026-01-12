@@ -6,6 +6,46 @@ namespace Utkaka.ScaleNineSlicer.UI
 {
     public static class SlicedMeshHandler
     {
+        private static void FillInnerVertices(Span<CutInputVertex> inputVertices, VertexHelper vertexHelper)
+        {
+            var i = 0;
+            var index0 = -1;
+            var index1 = -1;
+            var index2 = -1;
+            for (; i < inputVertices.Length; i++)
+            {
+                var inputVertex = inputVertices[i];
+                if (!inputVertex.Inner) continue;
+                index0 = i;
+                break;
+            }
+            if (index0 < 0) return;
+            for (; i < inputVertices.Length; i++)
+            {
+                var inputVertex = inputVertices[i];
+                if (!inputVertex.Inner) continue;
+                index1 = i;
+                break;
+            }
+            if (index1 < 0) return;
+            var vertex1 = inputVertices[index0];
+            var vertex2 = inputVertices[index1];
+            for (; i < inputVertices.Length; i++)
+            {
+                var inputVertex = inputVertices[i];
+                if (!inputVertex.Inner) continue;
+                
+                if (!(Math.Abs(vertex1.Position.x - vertex2.Position.x) <= Mathf.Epsilon
+                      && Math.Abs(vertex1.Position.x - inputVertex.Position.x) <= Mathf.Epsilon) &&
+                    !(Math.Abs(vertex1.Position.y - vertex2.Position.y) <= Mathf.Epsilon
+                      && Math.Abs(vertex1.Position.y - inputVertex.Position.y) <= Mathf.Epsilon))
+                {
+                    vertexHelper.AddTriangle(vertex1.VertexIndex - 1, vertex2.VertexIndex - 1, inputVertex.VertexIndex - 1);
+                    vertex2 = inputVertex;
+                }
+            }
+        }
+        
         public static void PrepareMesh(Span<CutInputVertex> inputVertices, Span<CutLine> cutLines, 
             VertexHelper vertexHelper, Color32 color, int width, int height, bool skipCenter, ref int meshVertexCount)
         {
@@ -21,6 +61,8 @@ namespace Utkaka.ScaleNineSlicer.UI
                         ProcessMeshQuad(inputVertices, vertexHelper, color, height, i, j, ref meshVertexCount);
                     }
                 }
+
+                FillInnerVertices(inputVertices, vertexHelper);
                 return;
             }
             

@@ -398,10 +398,8 @@ namespace Utkaka.ScaleNineSlicer.UI
 
             var context = new CapsuleImageMeshContext(this);
             
-            var heapArray = Utils.GetFromPoolIfNeeded<CapsuleVertex>(context.VertexCount);
-            var vertices = heapArray == null ? stackalloc CapsuleVertex[context.VertexCount] : heapArray.AsSpan();
-            
-            Debug.Log(vertices.Length);
+            var heapArray = Utils.GetFromPoolIfNeeded<CutInputVertex>(context.VertexCount);
+            var vertices = heapArray == null ? stackalloc CutInputVertex[context.VertexCount] : heapArray.AsSpan();
             
             FillBaseVertices(vertices, in context);
 
@@ -415,7 +413,7 @@ namespace Utkaka.ScaleNineSlicer.UI
             Utils.ReturnToPool(vertices.Length, heapArray);
         }
 
-        private void PreparePolygon(int polygonIndex, in CapsuleImageMeshContext context, Span<CapsuleVertex> vertices, 
+        private void PreparePolygon(int polygonIndex, in CapsuleImageMeshContext context, Span<CutInputVertex> vertices, 
             VertexHelper toFill, ref int meshVertexCount)
         {
             var rectTransformComponent = rectTransform;
@@ -427,8 +425,8 @@ namespace Utkaka.ScaleNineSlicer.UI
             
             FillPolygonCutLines(cuts, context.FullRect, polygonIndex, context.CutRight, context.CutTop);
             
-            var tileVerticesHeapArray = Utils.GetFromPoolIfNeeded<CapsuleVertex>(vertices.Length);
-            var tileVertices = cutsHeapArray == null ? stackalloc CapsuleVertex[vertices.Length] : tileVerticesHeapArray.AsSpan();
+            var tileVerticesHeapArray = Utils.GetFromPoolIfNeeded<CutInputVertex>(vertices.Length);
+            var tileVertices = cutsHeapArray == null ? stackalloc CutInputVertex[vertices.Length] : tileVerticesHeapArray.AsSpan();
             
             for (var i = 0; i < context.TilesCount.x; i++)
             {
@@ -441,7 +439,9 @@ namespace Utkaka.ScaleNineSlicer.UI
                         vertex.Position = RectTransformUtility.PixelAdjustPoint(vertex.Position + tileShift, rectTransformComponent, parentCanvas);
                         tileVertices[v] = vertex;
                     }
-                    CapsuleMeshHandler.PrepareMesh(tileVertices, cuts, toFill);
+
+                    SlicedMeshHandler.PrepareMesh(tileVertices, cuts, toFill, Color.white, 51, 2, false,
+                        ref meshVertexCount);
                 }
             }
             
@@ -704,7 +704,7 @@ namespace Utkaka.ScaleNineSlicer.UI
             return result;
         }
         
-        private void FillBaseVertices(Span<CapsuleVertex> vertices, in CapsuleImageMeshContext context)
+        private void FillBaseVertices(Span<CutInputVertex> vertices, in CapsuleImageMeshContext context)
         {
             var localActiveSprite = activeSprite;
             var adjustedPixelsPerUnit = context.MultipliedPixelsPerUnit;
@@ -722,7 +722,7 @@ namespace Utkaka.ScaleNineSlicer.UI
             var indexCount = 0;
 
             var rectRatio = context.TileSize / context.SpriteSize;
-            var outerRadiusOnSprite = 54.0f;
+            var outerRadiusOnSprite = localActiveSprite.rect.width / 2.0f;
             var innerRadiusOnSprite = 44.0f;
             var outerRadiusOnRect = (rectRatio * outerRadiusOnSprite).x;
             var innerRadiusOnRect = outerRadiusOnRect - (outerRadiusOnSprite - innerRadiusOnSprite);
@@ -731,30 +731,24 @@ namespace Utkaka.ScaleNineSlicer.UI
             var stepCount = 50;
             var step = Mathf.PI * 2 / stepCount;
             
-            for (var i = 0; i < stepCount; i++)
+            for (var i = 0; i < stepCount + 1; i++)
             {
-                var a = - i * step - Mathf.PI * 0.5f;
+                var a = i * step - Mathf.PI * 0.5f;
                 vertices[indexCount++] = VertexFromAngle(a, outerRadiusOnSprite, Vector2.zero, outerRadiusOnRect,
-                    context.SpriteSize, baseRect, uv1, uv4);
-            }
-            
-            vertices[indexCount++] = VertexFromAngle(- Mathf.PI * 0.5f - Mathf.Epsilon, outerRadiusOnSprite, Vector2.zero, outerRadiusOnRect,
-                context.SpriteSize, baseRect, uv1, uv4);
-            
-            for (var i = 0; i < stepCount; i++)
-            {
-                var a = i * step - Mathf.PI * 0.5f + Mathf.Epsilon;
-                
+                    context.SpriteSize, baseRect, uv1, uv4, false);
                 vertices[indexCount++] = VertexFromAngle(a, innerRadiusOnSprite, Vector2.zero, innerRadiusOnRect,
-                    context.SpriteSize, baseRect, uv1, uv4);
+                    context.SpriteSize, baseRect, uv1, uv4, true);
             }
             
-            vertices[indexCount] = VertexFromAngle(- Mathf.PI * 0.5f, innerRadiusOnSprite, Vector2.zero, innerRadiusOnRect,
-                context.SpriteSize, baseRect, uv1, uv4);
+            /*vertices[indexCount++] = VertexFromAngle(- Mathf.PI * 0.5f - Mathf.Epsilon, outerRadiusOnSprite, Vector2.zero, outerRadiusOnRect,
+                context.SpriteSize, baseRect, uv1, uv4);*/
+            
+            /*vertices[indexCount] = VertexFromAngle(- Mathf.PI * 0.5f, innerRadiusOnSprite, Vector2.zero, innerRadiusOnRect,
+                context.SpriteSize, baseRect, uv1, uv4);*/
         }
 
-        private CapsuleVertex VertexFromAngle(float angle, float spriteRadius, Vector2 spriteOffset, float rectRadius, Vector2 spriteSize,
-            Rect rect, Vector2 uv1, Vector2 uv2)
+        private CutInputVertex VertexFromAngle(float angle, float spriteRadius, Vector2 spriteOffset, float rectRadius, Vector2 spriteSize,
+            Rect rect, Vector2 uv1, Vector2 uv2, bool inner)
         {
             var sin = Mathf.Sin(angle);
             var cos = Mathf.Cos(angle);
@@ -766,18 +760,19 @@ namespace Utkaka.ScaleNineSlicer.UI
             
             var pointOnRect = circlePosition * rectRadius + rect.center;
 
-            return new CapsuleVertex
+            return new CutInputVertex
             {
                 Position = pointOnRect,
-                UV = uv
+                UV = uv,
+                Inner = inner
             };
         }
 
-        private CapsuleVertex PositionToVertex(Vector2 position, Rect rect, Vector2 uv1, Vector2 uv2)
+        private CutInputVertex PositionToVertex(Vector2 position, Rect rect, Vector2 uv1, Vector2 uv2)
         {
             var ratio = (position - rect.position) / rect.size;
 
-            return new CapsuleVertex
+            return new CutInputVertex
             {
                 Position = position,
                 UV = ratio * (uv2 - uv1) + uv1

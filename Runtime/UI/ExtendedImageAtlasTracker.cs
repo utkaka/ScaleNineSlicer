@@ -3,10 +3,10 @@ using UnityEngine.U2D;
 
 namespace Utkaka.ScaleNineSlicer.UI
 {
-    public static class SlicedImageAtlasTracker
+    public static class ExtendedImageAtlasTracker
     {
         // To track textureless images, which will be rebuild if sprite atlas manager registered a Sprite Atlas that will give this image new texture
-        private static readonly List<SlicedImage> TrackedTexturelessImages = new();
+        private static readonly List<ExtendedImage> TrackedTexturelessImages = new();
         private static bool _initialized;
 
         private static void RebuildImage(SpriteAtlas spriteAtlas)
@@ -20,7 +20,7 @@ namespace Utkaka.ScaleNineSlicer.UI
             }
         }
 
-        public static void TrackImage(SlicedImage g)
+        public static void TrackImage(ExtendedImage g)
         {
             if (!_initialized)
             {
@@ -31,7 +31,7 @@ namespace Utkaka.ScaleNineSlicer.UI
             TrackedTexturelessImages.Add(g);
         }
 
-        public static void UnTrackImage(SlicedImage g)
+        public static void UnTrackImage(ExtendedImage g)
         {
             TrackedTexturelessImages.Remove(g);
         }

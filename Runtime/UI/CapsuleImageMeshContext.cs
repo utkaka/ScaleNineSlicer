@@ -35,22 +35,22 @@ namespace Utkaka.ScaleNineSlicer.UI
             }
             TileSize = FullRect.size;
 
-            sliced &= capsuleImage.hasBorder;
-            
             MultipliedPixelsPerUnit = capsuleImage.multipliedPixelsPerUnit;
-            var tileMultipliedPixelsPerUnit = 1.0f;
 
             if (tiled)
             {
                 TileSize = capsuleImage.tileSize != Vector2.zero ? capsuleImage.tileSize : SpriteSize;
                 transformRect.size = TileSize;
-                tileMultipliedPixelsPerUnit = MultipliedPixelsPerUnit;
             }
             if (sliced)
             {
-                VertexCount = 51;
-                //VertexCount += 4; // hole
-                VertexCount += 51;
+                var stepsCount = capsuleImage.sliceApproximationSteps;
+                VertexCount = stepsCount * 2 + 3;
+                if (capsuleImage.sliceType != CapsuleImage.Type.Circle)
+                {
+                    //VertexCount += 4 + (stepsCount & 1) * 2;
+                    VertexCount += 4;
+                }
             }
 
             if (tiled)
@@ -58,11 +58,11 @@ namespace Utkaka.ScaleNineSlicer.UI
                 var canRepeatTiles = capsuleImage.activeSprite.texture.wrapMode == TextureWrapMode.Repeat;
                 var tileSpacing = capsuleImage.tileSpacing;
                 var canRepeatX = canRepeatTiles && tileSpacing.x == 0
-                                                && Mathf.Abs(TileSize.x - SpriteSize.x) <= Mathf.Epsilon;
-                                                //&& VertexCountPerTile.x == 2;
-                                                var canRepeatY = canRepeatTiles && tileSpacing.y == 0
-                                                    && Mathf.Abs(TileSize.y - SpriteSize.y) <= Mathf.Epsilon;
-                                                //&& VertexCountPerTile.y == 2;
+                                                && Mathf.Abs(TileSize.x - SpriteSize.x) <= Mathf.Epsilon
+                                                && VertexCount == 4;
+                var canRepeatY = canRepeatTiles && tileSpacing.y == 0
+                                                && Mathf.Abs(TileSize.y - SpriteSize.y) <= Mathf.Epsilon
+                                                && VertexCount == 4;
                 
                 if (!canRepeatX)
                 {

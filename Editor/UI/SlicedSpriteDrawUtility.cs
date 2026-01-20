@@ -75,6 +75,30 @@ namespace Utkaka.ScaleNineSlicer.Editor.UI
             GUI.DrawTextureWithTexCoords(rect, tex, texCoords);
             tex.wrapMode = originalMode;
         }
+        
+        public static void DrawCapsuleSprite(Sprite sprite, Rect drawArea, Color color, float outerRadius,
+            Vector2 outerCenter,
+            float innerRadius, Vector2 innerCenter)
+        {
+            if (sprite == null)
+                return;
+
+            Texture2D tex = sprite.texture;
+            if (tex == null)
+                return;
+
+            Rect outer = sprite.rect;
+
+            Vector4 uv4 = UnityEngine.Sprites.DataUtility.GetOuterUV(sprite);
+            Rect uv = new Rect(uv4.x, uv4.y, uv4.z - uv4.x, uv4.w - uv4.y);
+            Vector4 padding = UnityEngine.Sprites.DataUtility.GetPadding(sprite);
+            padding.x /= outer.width;
+            padding.y /= outer.height;
+            padding.z /= outer.width;
+            padding.w /= outer.height;
+
+            DrawCapsuleSprite(tex, drawArea, padding, outer, uv, color, outerRadius, outerCenter, innerRadius, innerCenter);
+        }
 
         // Draw the specified Image.
         public static void DrawSprite(Sprite sprite, Rect drawArea, Color color)
@@ -111,7 +135,8 @@ namespace Utkaka.ScaleNineSlicer.Editor.UI
         }
 
         // Draw the specified Image.
-        private static void DrawSprite(Texture tex, Rect drawArea, Vector4 padding, Rect outer, Rect inner, Rect uv, Color color, Material mat)
+        private static void DrawSprite(Texture tex, Rect drawArea, Vector4 padding, Rect outer, Rect inner, Rect uv,
+            Color color, Material mat)
         {
             // Create the texture rectangle that is centered inside rect.
             Rect outerRect = drawArea;
@@ -196,6 +221,70 @@ namespace Utkaka.ScaleNineSlicer.Editor.UI
             }
 
             GUI.EndGroup();
+        }
+        
+        private static void DrawCapsuleSprite(Texture tex, Rect drawArea, Vector4 padding, Rect outer, Rect uv,
+            Color color, float outerRadius, Vector2 outerCenter, float innerRadius, Vector2 innerCenter)
+        {
+            // Create the texture rectangle that is centered inside rect.
+            Rect outerRect = drawArea;
+            outerRect.width = Mathf.Abs(outer.width);
+            outerRect.height = Mathf.Abs(outer.height);
+
+            if (outerRect.width > 0f)
+            {
+                float f = drawArea.width / outerRect.width;
+                outerRect.width *= f;
+                outerRect.height *= f;
+            }
+
+            if (drawArea.height > outerRect.height)
+            {
+                outerRect.y += (drawArea.height - outerRect.height) * 0.5f;
+            }
+            else if (outerRect.height > drawArea.height)
+            {
+                float f = drawArea.height / outerRect.height;
+                outerRect.width *= f;
+                outerRect.height *= f;
+            }
+
+            if (drawArea.width > outerRect.width)
+                outerRect.x += (drawArea.width - outerRect.width) * 0.5f;
+
+            // Draw the background
+            EditorGUI.DrawTextureTransparent(outerRect, null, ScaleMode.ScaleToFit, outer.width / outer.height);
+
+            // Draw the Image
+            GUI.color = color;
+
+            Rect paddedTexArea = new Rect(
+                outerRect.x + outerRect.width * padding.x,
+                outerRect.y + outerRect.height * padding.w,
+                outerRect.width - (outerRect.width * (padding.z + padding.x)),
+                outerRect.height - (outerRect.height * (padding.w + padding.y))
+            );
+
+            GUI.DrawTextureWithTexCoords(paddedTexArea, tex, uv, true);
+            
+            var ratio = outerRect.height / outer.height;
+            
+            var innerCircleCenter = new Vector3(outerRect.center.x + innerCenter.x * ratio, outerRect.center.y - innerCenter.y * ratio, 0f);
+            var outerCircleCenter = new Vector3(outerRect.center.x + outerCenter.x * ratio, outerRect.center.y - outerCenter.y * ratio, 0f);
+            DrawCircle(innerCircleCenter, innerRadius * ratio, Color.red);
+            DrawCircle(outerCircleCenter, outerRadius * ratio, Color.magenta);
+        }
+
+        private static void DrawCircle(Vector3 center, float radius, Color color)
+        {
+            Handles.BeginGUI();
+            var prev = Handles.color;
+            Handles.color = color;
+            
+            Handles.DrawWireArc(center, Vector3.forward, Vector3.right, 360f, radius);
+            Handles.color = prev;
+            
+            Handles.EndGUI();
         }
     }
 }

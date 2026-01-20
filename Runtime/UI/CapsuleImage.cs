@@ -13,7 +13,8 @@ namespace Utkaka.ScaleNineSlicer.UI
         {
             Horizontal = 0,
             Vertical = 1,
-            Circle = 2
+            Circle = 2,
+            RoundedRect = 3
         }
         
         [SerializeField]
@@ -23,6 +24,8 @@ namespace Utkaka.ScaleNineSlicer.UI
         private int _sliceApproximationSteps;
         [SerializeField]
         private Type _sliceType;
+        [SerializeField]
+        public Vector4 _cornerRadius;
         
         #region Base properties
         public CapsuleSprite capsuleSprite
@@ -100,9 +103,10 @@ namespace Utkaka.ScaleNineSlicer.UI
 
 
             var context = new CapsuleImageMeshContext(this);
+            var vertexCount = context.OuterVertexCount * 2 + 1;
             
-            var heapArray = Utils.GetFromPoolIfNeeded<CutInputVertex>(context.VertexCount);
-            var vertices = heapArray == null ? stackalloc CutInputVertex[context.VertexCount] : heapArray.AsSpan();
+            var heapArray = Utils.GetFromPoolIfNeeded<CutInputVertex>(vertexCount);
+            var vertices = heapArray == null ? stackalloc CutInputVertex[vertexCount] : heapArray.AsSpan(0, vertexCount);
             
             FillBaseVertices(vertices, in context);
 
@@ -143,7 +147,7 @@ namespace Utkaka.ScaleNineSlicer.UI
                         tileVertices[v] = vertex;
                     }
 
-                    SlicedMeshHandler.PrepareCapsuleMesh(tileVertices, cuts, toFill, Color.white, 3, sliceApproximationSteps + 1 + 2, !fillCenter,
+                    SlicedMeshHandler.PrepareCapsuleMesh(tileVertices, cuts, toFill, Color.white, 3, context.OuterVertexCount, !fillCenter,
                         ref meshVertexCount);
                 }
             }
@@ -157,130 +161,118 @@ namespace Utkaka.ScaleNineSlicer.UI
             var localActiveSprite = activeSprite;
             var adjustedPixelsPerUnit = context.MultipliedPixelsPerUnit;
             var outerUV = DataUtility.GetOuterUV(localActiveSprite);
-            var padding = DataUtility.GetPadding(localActiveSprite) / adjustedPixelsPerUnit;
+            var padding = DataUtility.GetPadding(localActiveSprite);
             var position = context.FullRect.position;
-
-            var baseRect = Rect.MinMaxRect(padding.x, padding.y, context.TileSize.x - padding.z,
-                context.TileSize.y - padding.w);
-            baseRect.position += position;
             
-            var uv1 = new Vector2(outerUV.x, outerUV.y);
-            var uv4 = new Vector2(outerUV.z * context.TopRightUVMultiplier.x, outerUV.w * context.TopRightUVMultiplier.y);
+            var capsuleRect = new Rect(Vector2.zero, context.CapsuleSize);
+            capsuleRect.center = position + context.TileSize / 2.0f;
+            
+            var uv1 = new Vector2(outerUV.x, outerUV.y) - new Vector2(padding.x, padding.y) / context.SpriteSize;
+            var uv4 = new Vector2(outerUV.z, outerUV.w) + new Vector2(padding.z, padding.w) / context.SpriteSize;
             
             var indexCount = 0;
-
-            float rectRatio;
-            switch (sliceType)
-            {
-                case Type.Horizontal:
-                    rectRatio = context.TileSize.y / context.SpriteSize.y;
-                    break;
-                case Type.Vertical:
-                    rectRatio = context.TileSize.x / context.SpriteSize.x;
-                    break;
-                case Type.Circle:
-                    rectRatio = Math.Min(context.TileSize.x / context.SpriteSize.x, context.TileSize.y / context.SpriteSize.y);
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-
-            var outerRadiusOnSprite = capsuleSprite.OuterRadius;
-            var innerRadiusOnSprite = capsuleSprite.InnerRadius;
-            var outerRadiusOnRect =  rectRatio * outerRadiusOnSprite;
-            var innerRadiusOnRect = outerRadiusOnRect - (outerRadiusOnSprite - innerRadiusOnSprite);
-            var innerCenterOnSprite = capsuleSprite.Center;
-            var innerCenterOnRect = innerCenterOnSprite;
+            var innerCenterOnSprite = capsuleSprite.InnerCenter;
+            var outerCenterOnSprite = capsuleSprite.OuterCenter;
             
-            //Circle
-            var step = Mathf.PI * 2 / sliceApproximationSteps;
+            //Bottom left quarter
+            FillQuarter(vertices, ref indexCount, uv1, uv4, capsuleRect.min, capsuleRect.center, context.CornerRadius.x,
+                context.CloseVerticalQuarter, context.OuterVertexCount, context.SpriteSize, -Mathf.PI * 0.5f);
             
-            switch (sliceType)
-            {
-                case Type.Horizontal:
-                    
-                    for (var i = 0; i <= sliceApproximationSteps / 2; i++)
-                    {
-                        var a = - i * step - Mathf.PI * 0.5f;
-                        vertices[indexCount + sliceApproximationSteps + 1 + 2] = VertexFromAngle(a, innerRadiusOnSprite, innerCenterOnSprite, innerRadiusOnRect,
-                            innerCenterOnRect, context.SpriteSize, baseRect, uv1, uv4, true);
-                        vertices[indexCount++] = VertexFromAngle(a, outerRadiusOnSprite, Vector2.zero, outerRadiusOnRect,
-                            Vector2.zero, context.SpriteSize, baseRect, uv1, uv4, false);
-                    }
-
-                    var a1 = - Mathf.PI * 0.5f - Mathf.PI;
-                    /*if ((sliceApproximationSteps | 1) == 1)
-                    {
-                        vertices[indexCount + sliceApproximationSteps + 1 + 2] = VertexFromAngle(a1, innerRadiusOnSprite, innerCenterOnSprite, innerRadiusOnRect,
-                            innerCenterOnRect, context.SpriteSize, baseRect, uv1, uv4, true);
-                        vertices[indexCount++] = VertexFromAngle(a1, outerRadiusOnSprite, Vector2.zero, outerRadiusOnRect,
-                            Vector2.zero, context.SpriteSize, baseRect, uv1, uv4, false);
-                    }*/
-
-                    baseRect.position += new Vector2(baseRect.width - outerRadiusOnRect, 0.0f);
-                    
-                    vertices[indexCount + sliceApproximationSteps + 1 + 2] = VertexFromAngle(a1, innerRadiusOnSprite, innerCenterOnSprite, innerRadiusOnRect,
-                        innerCenterOnRect, context.SpriteSize, baseRect, uv1, uv4, true);
-                    vertices[indexCount++] = VertexFromAngle(a1, outerRadiusOnSprite, Vector2.zero, outerRadiusOnRect,
-                        Vector2.zero, context.SpriteSize, baseRect, uv1, uv4, false);
-                    
-                    for (var i = sliceApproximationSteps / 2 + 1; i <= sliceApproximationSteps; i++)
-                    {
-                        var a = - i * step - Mathf.PI * 0.5f;
-                        vertices[indexCount + sliceApproximationSteps + 1 + 2] = VertexFromAngle(a, innerRadiusOnSprite, innerCenterOnSprite, innerRadiusOnRect,
-                            innerCenterOnRect, context.SpriteSize, baseRect, uv1, uv4, true);
-                        vertices[indexCount++] = VertexFromAngle(a, outerRadiusOnSprite, Vector2.zero, outerRadiusOnRect,
-                            Vector2.zero, context.SpriteSize, baseRect, uv1, uv4, false);
-                    }
-                    
-                    baseRect.position -= new Vector2(baseRect.width - outerRadiusOnRect, 0.0f);
-                    
-                    vertices[indexCount + sliceApproximationSteps + 1 + 2] = VertexFromAngle(- Mathf.PI * 0.5f, innerRadiusOnSprite, innerCenterOnSprite, innerRadiusOnRect,
-                        innerCenterOnRect, context.SpriteSize, baseRect, uv1, uv4, true);
-                    vertices[indexCount++] = VertexFromAngle(- Mathf.PI * 0.5f, outerRadiusOnSprite, Vector2.zero, outerRadiusOnRect,
-                        Vector2.zero, context.SpriteSize, baseRect, uv1, uv4, false);
-                    
-                    break;
-                case Type.Vertical:
-                    rectRatio = context.TileSize.x / context.SpriteSize.x;
-                    break;
-                case Type.Circle:
-                    for (var i = 0; i < sliceApproximationSteps + 1; i++)
-                    {
-                        var a = - i * step - Mathf.PI * 0.5f;
-                        vertices[indexCount + sliceApproximationSteps + 2] = VertexFromAngle(a, innerRadiusOnSprite, innerCenterOnSprite, innerRadiusOnRect,
-                            innerCenterOnRect, context.SpriteSize, baseRect, uv1, uv4, true);
-                        vertices[indexCount++] = VertexFromAngle(a, outerRadiusOnSprite, Vector2.zero, outerRadiusOnRect,
-                            Vector2.zero, context.SpriteSize, baseRect, uv1, uv4, false);
-                    }
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-            Debug.Log(indexCount);
+            //Top left quarter
+            FillQuarter(vertices, ref indexCount, uv1, uv4, new Vector2(capsuleRect.xMin, capsuleRect.yMax), capsuleRect.center,
+                context.CornerRadius.y, context.CloseHorizontalQuarter, context.OuterVertexCount, context.SpriteSize,
+                -Mathf.PI);
             
-            vertices[vertices.Length - 1] = VertexFromAngle(0.0f, 0.0f, innerCenterOnSprite, 0.0f,
-                innerCenterOnRect, context.SpriteSize, baseRect, uv1, uv4, true);
+            //Top right quarter
+            FillQuarter(vertices, ref indexCount, uv1, uv4, capsuleRect.max, capsuleRect.center, context.CornerRadius.z,
+                context.CloseVerticalQuarter, context.OuterVertexCount, context.SpriteSize, Mathf.PI * 0.5f);
+            
+            //Bottom right quarter
+            FillQuarter(vertices, ref indexCount, uv1, uv4, new Vector2(capsuleRect.xMax, capsuleRect.yMin), capsuleRect.center,
+                context.CornerRadius.w, context.CloseHorizontalQuarter, context.OuterVertexCount, context.SpriteSize,
+                0.0f);
+            
+            //Close circle
+            vertices[context.OuterVertexCount - 1] = vertices[0];
+            vertices[context.OuterVertexCount * 2 - 1] = vertices[context.OuterVertexCount];
+            
+            //Center point
+            vertices[^1] = VertexFromAngle(Vector2.zero, 0.0f, innerCenterOnSprite, 0.0f,
+                capsuleRect.center + innerCenterOnSprite - outerCenterOnSprite, context.SpriteSize, uv1, uv4);
         }
 
-        private CutInputVertex VertexFromAngle(float angle, float spriteRadius, Vector2 spriteOffset, float rectRadius, Vector2 rectOffset, Vector2 spriteSize,
-            Rect rect, Vector2 uv1, Vector2 uv2, bool inner)
+        private void FillQuarter(Span<CutInputVertex> vertices, ref int indexCount, Vector2 uv1, Vector2 uv4,
+            Vector2 corner, Vector2 center, float outerRadiusOnRect, bool addEndPoints, int outerVertexCount,
+            Vector2 spriteSize, float startAngle)
         {
-            var sin = Mathf.Sin(angle);
-            var cos = Mathf.Cos(angle);
-            var circlePosition = new Vector2(cos, sin);
+            var outerRadiusOnSprite = capsuleSprite.OuterRadius;
+            var innerRadiusOnSprite = capsuleSprite.InnerRadius;
+            var outerCenterOnSprite = capsuleSprite.OuterCenter;
+            var innerCenterOnSprite = capsuleSprite.InnerCenter;
+            var radiusDiff = outerRadiusOnSprite - innerRadiusOnSprite;
+            
+            outerRadiusOnRect = Mathf.Max(0f, outerRadiusOnRect);
+            var innerRadiusOnRect = Mathf.Max(0f, outerRadiusOnRect - radiusDiff);
+            
+            var toCenter = center - corner;
+            toCenter = new Vector2(Mathf.Sign(toCenter.x), Mathf.Sign(toCenter.y));
+            var outerCenterOnRect = corner + toCenter * outerRadiusOnRect;
+            var innerCenterOnRect = outerCenterOnRect;
 
+            if (toCenter.x < Mathf.Epsilon)
+            {
+                innerCenterOnRect.x = Mathf.Min(corner.x - radiusDiff, outerCenterOnRect.x);
+            }
+            else
+            {
+                innerCenterOnRect.x = Mathf.Max(corner.x + radiusDiff, outerCenterOnRect.x);
+            }
+            
+            if (toCenter.y < Mathf.Epsilon)
+            {
+                innerCenterOnRect.y = Mathf.Min(corner.y - radiusDiff, outerCenterOnRect.y);
+            }
+            else
+            {
+                innerCenterOnRect.y = Mathf.Max(corner.y + radiusDiff, outerCenterOnRect.y);
+            }
+
+            innerCenterOnRect += innerCenterOnSprite - outerCenterOnSprite;
+            
+            var baseStepCount = sliceApproximationSteps + 1;
+            var stepAngle = Mathf.PI / (2 * baseStepCount);
+            var stepCount = addEndPoints ? baseStepCount + 1 : baseStepCount;
+            
+            Debug.Log(innerCenterOnRect);
+
+            for (var i = 0; i < stepCount; i++)
+            {
+                var angle = -i * stepAngle + startAngle;
+                var sin = Mathf.Sin(angle);
+                var cos = Mathf.Cos(angle);
+                var circlePosition = new Vector2(cos, sin);
+                vertices[indexCount + outerVertexCount] = VertexFromAngle(circlePosition, innerRadiusOnSprite, innerCenterOnSprite,
+                    innerRadiusOnRect,
+                    innerCenterOnRect, spriteSize, uv1, uv4);
+                
+                vertices[indexCount++] = VertexFromAngle(circlePosition, outerRadiusOnSprite, outerCenterOnSprite, outerRadiusOnRect,
+                    outerCenterOnRect, spriteSize, uv1, uv4);
+            }
+        }
+
+        private CutInputVertex VertexFromAngle(Vector2 circlePosition, float spriteRadius, Vector2 spriteOffset, float rectRadius,
+            Vector2 rectOffset, Vector2 spriteSize, Vector2 uv1, Vector2 uv2)
+        {
             var pointOnSprite = circlePosition * spriteRadius + spriteOffset + spriteSize * 0.5f;
             var pointRatio = pointOnSprite / spriteSize;
             var uv = pointRatio * (uv2 - uv1) + uv1;
-            
-            var pointOnRect = circlePosition * rectRadius + rectOffset + rect.center;
+
+            var pointOnRect = circlePosition * rectRadius + rectOffset;
 
             return new CutInputVertex
             {
                 Position = pointOnRect,
-                UV = uv,
-                Inner = inner
+                UV = uv
             };
         }
     }

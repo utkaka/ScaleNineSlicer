@@ -9,11 +9,13 @@ namespace Utkaka.ScaleNineSlicer.UI
         [SerializeField]
         private Sprite _sprite;
         [SerializeField]
-        private float _innerRadius;
-        [SerializeField]
         private float _outerRadius;
         [SerializeField]
-        private Vector2 _center;
+        private Vector2 _outerCenter;
+        [SerializeField]
+        private float _innerRadius;
+        [SerializeField]
+        private Vector2 _innerCenter;
 
         public Sprite Sprite => _sprite;
 
@@ -21,12 +23,16 @@ namespace Utkaka.ScaleNineSlicer.UI
 
         public float OuterRadius => _outerRadius;
 
-        public Vector2 Center => _center;
-        
+        public Vector2 OuterCenter => _outerCenter;
+
+        public Vector2 InnerCenter => _innerCenter;
+
         private void OnValidate()
         {
-            _outerRadius = Math.Min(_outerRadius, Math.Min(_sprite.rect.width / 2.0f, _sprite.rect.height/ 2.0f));
-            _innerRadius = Math.Min(_innerRadius, _outerRadius);
+            _outerRadius = Mathf.Max(_outerRadius, 0);
+            _innerRadius = Mathf.Max(_innerRadius, 0);
+            _outerRadius = Mathf.Min(_outerRadius, Math.Min(_sprite.rect.width / 2.0f, _sprite.rect.height/ 2.0f));
+            _innerRadius = Mathf.Min(_innerRadius, _outerRadius);
         }
     }
 }

@@ -6,6 +6,50 @@ namespace Utkaka.ScaleNineSlicer.UI
 {
     public static class SlicedMeshHandler
     {
+        
+        public static void PrepareCapsuleMesh(Span<CutInputVertex> inputVertices, Span<CutLine> cutLines, 
+            VertexHelper vertexHelper, Color32 color, int width, int height, bool skipCenter, ref int meshVertexCount)
+        {
+            if (width == 0 || height == 0) return;
+
+            /*if (cutLines.Length == 0)
+            {
+                for (var i = 0; i < width - 1; i++)
+                {
+                    for (var j = 0; j < height - 1; j++)
+                    {
+                        if (skipCenter && i > 0 && i < width - 2 && j > 0 && j < height - 2) continue;
+                        ProcessMeshQuad(inputVertices, vertexHelper, color, height, i, j, ref meshVertexCount);
+                    }
+                }
+
+                return;
+            }*/
+            
+            var edgeIntersectionsCount = ((width - 1) * height + width * (height - 1)) * cutLines.Length;
+            var edgeIntersectionsHeapArray = Utils.GetFromPoolIfNeeded<CutVertex>(edgeIntersectionsCount);
+            if (edgeIntersectionsHeapArray != null)
+            {
+                Array.Clear(edgeIntersectionsHeapArray, 0, edgeIntersectionsCount);
+            }
+            var edgeIntersections = edgeIntersectionsHeapArray == null ? stackalloc CutVertex[edgeIntersectionsCount] : edgeIntersectionsHeapArray.AsSpan();
+            for (var j = 0; j < height - 1; j++)
+            {
+                ProcessMeshQuad(inputVertices, edgeIntersections, cutLines, vertexHelper, color, width, height, 0, j, ref meshVertexCount);
+            }
+
+            if (!skipCenter)
+            {
+                for (var j = 0; j < height - 1; j++)
+                {
+                    ProcessMeshTriangle(inputVertices, edgeIntersections, cutLines, vertexHelper, color, width, height, 1, j, ref meshVertexCount);
+                }
+            }
+            
+            
+            Utils.ReturnToPool(edgeIntersections.Length, edgeIntersectionsHeapArray);
+        }
+        
         public static void PrepareMesh(Span<CutInputVertex> inputVertices, Span<CutLine> cutLines, 
             VertexHelper vertexHelper, Color32 color, int width, int height, bool skipCenter, ref int meshVertexCount)
         {
@@ -21,6 +65,7 @@ namespace Utkaka.ScaleNineSlicer.UI
                         ProcessMeshQuad(inputVertices, vertexHelper, color, height, i, j, ref meshVertexCount);
                     }
                 }
+
                 return;
             }
             
@@ -39,6 +84,7 @@ namespace Utkaka.ScaleNineSlicer.UI
                     ProcessMeshQuad(inputVertices, edgeIntersections, cutLines, vertexHelper, color, width, height, i, j, ref meshVertexCount);
                 }
             }
+            
             Utils.ReturnToPool(edgeIntersections.Length, edgeIntersectionsHeapArray);
         }
 
@@ -85,17 +131,6 @@ namespace Utkaka.ScaleNineSlicer.UI
         private static void ProcessMeshQuad(Span<CutInputVertex> inputVertices, Span<CutVertex> edgeIntersections, Span<CutLine> cutLines, 
             VertexHelper vertexHelper, Color32 color, int width, int height, int x, int y, ref int meshVertexCount)
         {
-            var linesCount = cutLines.Length;
-            var edgesCount = (width - 1) * height + width * (height - 1);
-
-            var bufferSize = 4 + linesCount;
-
-            var vertexBuffer1HeapArray = Utils.GetFromPoolIfNeeded<CutVertex>(bufferSize);
-            var vertexBuffer1 = vertexBuffer1HeapArray == null ? stackalloc CutVertex[bufferSize] : vertexBuffer1HeapArray.AsSpan();
-
-            var vertexBuffer2HeapArray = Utils.GetFromPoolIfNeeded<CutVertex>(bufferSize);
-            var vertexBuffer2 = vertexBuffer2HeapArray == null ? stackalloc CutVertex[bufferSize] : vertexBuffer2HeapArray.AsSpan();
-
             var bottomLeftIndex = height * x + y;
             var doubleHeight = 2 * height - 1;
             var doubleHeightX = doubleHeight * x;
@@ -105,14 +140,67 @@ namespace Utkaka.ScaleNineSlicer.UI
             var edge3 = doubleHeightX + doubleHeight + y;
             var edge4 = doubleHeightX + y + height - 1;
             
+            var vertexBuffer1HeapArray = Utils.GetFromPoolIfNeeded<CutVertex>(4);
+            var vertexBuffer1 = vertexBuffer1HeapArray == null ? stackalloc CutVertex[4] : vertexBuffer1HeapArray.AsSpan();
+            
             vertexBuffer1[0] = CreateCutVertex(inputVertices, bottomLeftIndex, edge4, edge1);
             vertexBuffer1[1] = CreateCutVertex(inputVertices, bottomLeftIndex + 1, edge2, edge1);
             vertexBuffer1[2] = CreateCutVertex(inputVertices, bottomLeftIndex + height + 1, edge2, edge3);
             vertexBuffer1[3] = CreateCutVertex(inputVertices, bottomLeftIndex + height, edge4, edge3);
 
-            var vertexCount = 4;
+            ProcessMeshVertices(inputVertices, vertexBuffer1, edgeIntersections, cutLines,
+                vertexHelper, color, width, height, x, y, ref meshVertexCount);
             
 
+            Utils.ReturnToPool(vertexBuffer1.Length, vertexBuffer1HeapArray);
+        }
+        
+        private static void ProcessMeshTriangle(Span<CutInputVertex> inputVertices, Span<CutVertex> edgeIntersections, Span<CutLine> cutLines, 
+            VertexHelper vertexHelper, Color32 color, int width, int height, int x, int y, ref int meshVertexCount)
+        {
+            var bottomLeftIndex = height * x + y;
+            var doubleHeight = 2 * height - 1;
+            var doubleHeightX = doubleHeight * x;
+
+            var edge1 = doubleHeightX + y;
+            var edge2 = doubleHeightX + y + height;
+            var edge3 = doubleHeightX + doubleHeight + y;
+            var edge4 = doubleHeightX + y + height - 1;
+            
+            var vertexBuffer1HeapArray = Utils.GetFromPoolIfNeeded<CutVertex>(4);
+            var vertexBuffer1 = vertexBuffer1HeapArray == null ? stackalloc CutVertex[4] : vertexBuffer1HeapArray.AsSpan();
+            
+            vertexBuffer1[0] = CreateCutVertex(inputVertices, bottomLeftIndex, edge4, edge1);
+            vertexBuffer1[1] = CreateCutVertex(inputVertices, bottomLeftIndex + 1, edge4, edge3);
+            vertexBuffer1[2] = CreateCutVertex(inputVertices, height * 2, edge2, edge1);
+            vertexBuffer1[3] = CreateCutVertex(inputVertices, height * 2, edge2, edge3);
+            
+
+            ProcessMeshVertices(inputVertices, vertexBuffer1, edgeIntersections, cutLines,
+                vertexHelper, color, width, height, x, y, ref meshVertexCount);
+            
+
+            Utils.ReturnToPool(vertexBuffer1.Length, vertexBuffer1HeapArray);
+        }
+
+        private static void ProcessMeshVertices(Span<CutInputVertex> inputVertices, Span<CutVertex> meshVertices, Span<CutVertex> edgeIntersections,
+            Span<CutLine> cutLines,
+            VertexHelper vertexHelper, Color32 color, int width, int height, int x, int y, ref int meshVertexCount)
+        {
+            var vertexCount = meshVertices.Length;
+            var linesCount = cutLines.Length;
+            var edgesCount = (width - 1) * height + width * (height - 1);
+            
+            var bufferSize = vertexCount + linesCount;
+
+            var vertexBuffer1HeapArray = Utils.GetFromPoolIfNeeded<CutVertex>(bufferSize);
+            var vertexBuffer1 = vertexBuffer1HeapArray == null ? stackalloc CutVertex[bufferSize] : vertexBuffer1HeapArray.AsSpan();
+
+            var vertexBuffer2HeapArray = Utils.GetFromPoolIfNeeded<CutVertex>(bufferSize);
+            var vertexBuffer2 = vertexBuffer2HeapArray == null ? stackalloc CutVertex[bufferSize] : vertexBuffer2HeapArray.AsSpan();
+            
+            meshVertices.CopyTo(vertexBuffer1);
+            
             for (var i = 0; i < linesCount; i++)
             {
                 var line = cutLines[i];
@@ -255,6 +343,7 @@ namespace Utkaka.ScaleNineSlicer.UI
                     newPoint.EdgeY = point1.EdgeY;
                 }
                 newPoint.IntersectionIndex = intersectionIndex + 1;
+                edgeIntersections[intersectionIndex] = newPoint;
                 return newPoint;
             }
             return GetNewIntersectionPoint(point1, point2, dot1, dot2);
@@ -270,7 +359,6 @@ namespace Utkaka.ScaleNineSlicer.UI
             }
             var pos = Vector2.LerpUnclamped(point1.Position, point2.Position, t);
             var uv = Vector2.LerpUnclamped(point1.UV, point2.UV, t);
-
             return new CutVertex
             {
                 Position = pos,

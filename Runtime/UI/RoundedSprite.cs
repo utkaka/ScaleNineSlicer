@@ -31,6 +31,7 @@ namespace Utkaka.ScaleNineSlicer.UI
         {
             _outerRadius = Mathf.Max(_outerRadius, 0);
             _innerRadius = Mathf.Max(_innerRadius, 0);
+            if (_sprite == null) return;
             _outerRadius = Mathf.Min(_outerRadius, Math.Min(_sprite.rect.width / 2.0f, _sprite.rect.height/ 2.0f));
             _innerRadius = Mathf.Min(_innerRadius, _outerRadius);
         }

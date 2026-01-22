@@ -7,6 +7,7 @@ namespace Utkaka.ScaleNineSlicer.UI
     public struct RoundedImageCornerSettings
     {
         public float Radius;
+        [Range(0, 30)]
         public int ApproximationSteps;
     }
 }

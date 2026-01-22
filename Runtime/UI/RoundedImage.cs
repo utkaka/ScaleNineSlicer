@@ -6,7 +6,7 @@ using UnityEngine.UI;
 namespace Utkaka.ScaleNineSlicer.UI
 {
     [RequireComponent(typeof(CanvasRenderer))]
-    [AddComponentMenu("UI/CapsuleImage")]
+    [AddComponentMenu("UI/RoundedImage")]
     public class RoundedImage : ExtendedImage
     {
         public enum Type
@@ -23,7 +23,8 @@ namespace Utkaka.ScaleNineSlicer.UI
         [SerializeField]
         private Type _sliceType;
         [SerializeField]
-        private int _sliceApproximationSteps;
+        [Range(0, 30)]
+        private int _sliceApproximationSteps = 10;
         [SerializeField]
         private RoundedImageCornerSettings _bottomLeftCorner;
         [SerializeField]

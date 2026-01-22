@@ -4,7 +4,7 @@ using UnityEngine;
 namespace Utkaka.ScaleNineSlicer.UI
 {
     [CreateAssetMenu(fileName = "CapsuleSprite", menuName = "2D/Capsule Sprite", order = 999)]
-    public class CapsuleSprite : ScriptableObject
+    public class RoundedSprite : ScriptableObject
     {
         [SerializeField]
         private Sprite _sprite;

@@ -7,7 +7,7 @@ namespace Utkaka.ScaleNineSlicer.UI
 {
     [RequireComponent(typeof(CanvasRenderer))]
     [AddComponentMenu("UI/CapsuleImage")]
-    public class CapsuleImage : ExtendedImage
+    public class RoundedImage : ExtendedImage
     {
         public enum Type
         {
@@ -16,40 +16,46 @@ namespace Utkaka.ScaleNineSlicer.UI
             Circle = 2,
             RoundedRect = 3
         }
-        
-        [SerializeField]
-        private CapsuleSprite _capsuleSprite;
 
         [SerializeField]
-        private int _sliceApproximationSteps;
+        private RoundedSprite _roundedSprite;
+
         [SerializeField]
         private Type _sliceType;
         [SerializeField]
-        public Vector4 _cornerRadius;
+        private int _sliceApproximationSteps;
+        [SerializeField]
+        private RoundedImageCornerSettings _bottomLeftCorner;
+        [SerializeField]
+        private RoundedImageCornerSettings _topLeftCorner;
+        [SerializeField]
+        private RoundedImageCornerSettings _topRightCorner;
+        [SerializeField]
+        private RoundedImageCornerSettings _bottomRightCorner;
         
         #region Base properties
-        public CapsuleSprite capsuleSprite
+        public RoundedSprite roundedSprite
         {
-            get => _capsuleSprite;
+            get => _roundedSprite;
             set
             {
-                if (_capsuleSprite != null)
+                if (_roundedSprite != null)
                 {
-                    if (_capsuleSprite == value) return;
-                    var oldRectSize = _capsuleSprite?.Sprite != null ? _capsuleSprite.Sprite.rect.size : Vector2.zero;
+                    if (_roundedSprite == value) return;
+                    var oldRectSize = _roundedSprite?.Sprite != null ? _roundedSprite.Sprite.rect.size : Vector2.zero;
                     var newRectSize = value?.Sprite != null ? value.Sprite.rect.size : Vector2.zero;
                     m_SkipLayoutUpdate = oldRectSize.Equals(value ? newRectSize : Vector2.zero);
-                    m_SkipMaterialUpdate = _capsuleSprite?.Sprite.texture == (value ? value.Sprite?.texture : null);
-                    _capsuleSprite = value;
+                    m_SkipMaterialUpdate = _roundedSprite?.Sprite.texture == (value ? value.Sprite?.texture : null);
+                    _roundedSprite = value;
                     SetAllDirty();
                     TrackSprite();
                 }
                 else if (value != null)
                 {
-                    var oldRectSize = _capsuleSprite?.Sprite != null ? _capsuleSprite.Sprite.rect.size : Vector2.zero;
+                    var oldRectSize = _roundedSprite?.Sprite != null ? _roundedSprite.Sprite.rect.size : Vector2.zero;
                     m_SkipLayoutUpdate = oldRectSize == Vector2.zero;
                     m_SkipMaterialUpdate = value.Sprite?.texture == null;
-                    _capsuleSprite = value;
+                    _roundedSprite = value;
 
                     SetAllDirty();
                     TrackSprite();
@@ -59,12 +65,17 @@ namespace Utkaka.ScaleNineSlicer.UI
         #endregion
         
         #region Sliced properties
+        public override bool sliced
+        {
+            get => true;
+            set { }
+        }
         public int sliceApproximationSteps
         {
             get => _sliceApproximationSteps;
             set
             {
-                if (Utils.SetStruct(ref _sliceApproximationSteps, value)) SetVerticesDirty();
+                if (Utils.SetStruct(ref _sliceApproximationSteps, Mathf.Max(0, value))) SetVerticesDirty();
             }
         }
         
@@ -76,10 +87,55 @@ namespace Utkaka.ScaleNineSlicer.UI
                 if (Utils.SetStruct(ref _sliceType, value)) SetVerticesDirty();
             }
         }
+        
+        public RoundedImageCornerSettings bottomLeftCorner
+        {
+            get => _bottomLeftCorner;
+            set
+            {
+                value.ApproximationSteps = Mathf.Max(0, value.ApproximationSteps);
+                value.Radius = Mathf.Max(0, value.Radius);
+                if (Utils.SetStruct(ref _bottomLeftCorner, value)) SetVerticesDirty();
+            }
+        }
+        
+        public RoundedImageCornerSettings topLeftCorner
+        {
+            get => _topLeftCorner;
+            set
+            {
+                value.ApproximationSteps = Mathf.Max(0, value.ApproximationSteps);
+                value.Radius = Mathf.Max(0, value.Radius);
+                if (Utils.SetStruct(ref _topLeftCorner, value)) SetVerticesDirty();
+            }
+        }
+        
+        public RoundedImageCornerSettings topRightCorner
+        {
+            get => _topRightCorner;
+            set
+            {
+                value.ApproximationSteps = Mathf.Max(0, value.ApproximationSteps);
+                value.Radius = Mathf.Max(0, value.Radius);
+                if (Utils.SetStruct(ref _topRightCorner, value)) SetVerticesDirty();
+            }
+        }
+        
+        public RoundedImageCornerSettings bottomRightCorner
+        {
+            get => _bottomRightCorner;
+            set
+            {
+                value.ApproximationSteps = Mathf.Max(0, value.ApproximationSteps);
+                value.Radius = Mathf.Max(0, value.Radius);
+                if (Utils.SetStruct(ref _bottomRightCorner, value)) SetVerticesDirty();
+            }
+        }
+        
 
         #endregion
         
-        public override Sprite activeSprite => _capsuleSprite?.Sprite;
+        public override Sprite activeSprite => roundedSprite?.Sprite;
         
         protected override void OnPopulateMesh(VertexHelper toFill)
         {
@@ -89,20 +145,8 @@ namespace Utkaka.ScaleNineSlicer.UI
                 return;
             }
             toFill.Clear();
-            
-            if (useSpriteMesh && !sliced && !tiled && !filled)
-            {
-                var spriteMeshRect = GetPixelAdjustedRect();
-                if (preserveAspect)
-                {
-                    Utils.PreserveSpriteAspectRatio(ref spriteMeshRect, activeSprite.rect.size, rectTransform.pivot);
-                }
-                SpriteMeshHandler.PrepareMesh(toFill, activeSprite, color, spriteMeshRect, rectTransform.pivot);
-                return;
-            }
 
-
-            var context = new CapsuleImageMeshContext(this);
+            var context = new RoundedImageMeshContext(this);
             var vertexCount = context.OuterVertexCount * 2 + 1;
             
             var heapArray = Utils.GetFromPoolIfNeeded<CutInputVertex>(vertexCount);
@@ -120,7 +164,7 @@ namespace Utkaka.ScaleNineSlicer.UI
             Utils.ReturnToPool(vertices.Length, heapArray);
         }
 
-        private void PreparePolygon(int polygonIndex, in CapsuleImageMeshContext context, Span<CutInputVertex> vertices, 
+        private void PreparePolygon(int polygonIndex, in RoundedImageMeshContext context, Span<CutInputVertex> vertices, 
             VertexHelper toFill, ref int meshVertexCount)
         {
             var rectTransformComponent = rectTransform;
@@ -156,7 +200,7 @@ namespace Utkaka.ScaleNineSlicer.UI
             Utils.ReturnToPool(tileVertices.Length, tileVerticesHeapArray);
         }
         
-        private void FillBaseVertices(Span<CutInputVertex> vertices, in CapsuleImageMeshContext context)
+        private void FillBaseVertices(Span<CutInputVertex> vertices, in RoundedImageMeshContext context)
         {
             var localActiveSprite = activeSprite;
             var adjustedPixelsPerUnit = context.MultipliedPixelsPerUnit;
@@ -171,26 +215,20 @@ namespace Utkaka.ScaleNineSlicer.UI
             var uv4 = new Vector2(outerUV.z, outerUV.w) + new Vector2(padding.z, padding.w) / context.SpriteSize;
             
             var indexCount = 0;
-            var innerCenterOnSprite = capsuleSprite.InnerCenter;
-            var outerCenterOnSprite = capsuleSprite.OuterCenter;
+            var innerCenterOnSprite = roundedSprite.InnerCenter;
+            var outerCenterOnSprite = roundedSprite.OuterCenter;
             
             //Bottom left quarter
-            FillQuarter(vertices, ref indexCount, uv1, uv4, capsuleRect.min, capsuleRect.center, context.CornerRadius.x,
-                context.CloseVerticalQuarter, context.OuterVertexCount, context.SpriteSize, -Mathf.PI * 0.5f);
+            FillQuarter(vertices, ref indexCount, context.BottomLeftQuarter, uv1, uv4, context.SpriteSize, -Mathf.PI * 0.5f, context.OuterVertexCount, position);
             
             //Top left quarter
-            FillQuarter(vertices, ref indexCount, uv1, uv4, new Vector2(capsuleRect.xMin, capsuleRect.yMax), capsuleRect.center,
-                context.CornerRadius.y, context.CloseHorizontalQuarter, context.OuterVertexCount, context.SpriteSize,
-                -Mathf.PI);
+            FillQuarter(vertices, ref indexCount, context.TopLeftQuarter, uv1, uv4, context.SpriteSize, -Mathf.PI, context.OuterVertexCount, position);
             
             //Top right quarter
-            FillQuarter(vertices, ref indexCount, uv1, uv4, capsuleRect.max, capsuleRect.center, context.CornerRadius.z,
-                context.CloseVerticalQuarter, context.OuterVertexCount, context.SpriteSize, Mathf.PI * 0.5f);
+            FillQuarter(vertices, ref indexCount, context.TopRightQuarter, uv1, uv4, context.SpriteSize, Mathf.PI * 0.5f, context.OuterVertexCount, position);
             
             //Bottom right quarter
-            FillQuarter(vertices, ref indexCount, uv1, uv4, new Vector2(capsuleRect.xMax, capsuleRect.yMin), capsuleRect.center,
-                context.CornerRadius.w, context.CloseHorizontalQuarter, context.OuterVertexCount, context.SpriteSize,
-                0.0f);
+            FillQuarter(vertices, ref indexCount, context.BottomRightQuarter, uv1, uv4, context.SpriteSize, 0.0f, context.OuterVertexCount, position);
             
             //Close circle
             vertices[context.OuterVertexCount - 1] = vertices[0];
@@ -198,65 +236,32 @@ namespace Utkaka.ScaleNineSlicer.UI
             
             //Center point
             vertices[^1] = VertexFromAngle(Vector2.zero, 0.0f, innerCenterOnSprite, 0.0f,
-                capsuleRect.center + innerCenterOnSprite - outerCenterOnSprite, context.SpriteSize, uv1, uv4);
+                capsuleRect.center + (innerCenterOnSprite - outerCenterOnSprite) * context.ScaleRatio, context.SpriteSize, uv1, uv4);
         }
 
-        private void FillQuarter(Span<CutInputVertex> vertices, ref int indexCount, Vector2 uv1, Vector2 uv4,
-            Vector2 corner, Vector2 center, float outerRadiusOnRect, bool addEndPoints, int outerVertexCount,
-            Vector2 spriteSize, float startAngle)
+        private void FillQuarter(Span<CutInputVertex> vertices, ref int indexCount, RoundedImageQuarterData quarterData,
+            Vector2 uv1, Vector2 uv4, Vector2 spriteSize, float startAngle, int outerVertexCount, Vector2 position)
         {
-            var outerRadiusOnSprite = capsuleSprite.OuterRadius;
-            var innerRadiusOnSprite = capsuleSprite.InnerRadius;
-            var outerCenterOnSprite = capsuleSprite.OuterCenter;
-            var innerCenterOnSprite = capsuleSprite.InnerCenter;
-            var radiusDiff = outerRadiusOnSprite - innerRadiusOnSprite;
-            
-            outerRadiusOnRect = Mathf.Max(0f, outerRadiusOnRect);
-            var innerRadiusOnRect = Mathf.Max(0f, outerRadiusOnRect - radiusDiff);
-            
-            var toCenter = center - corner;
-            toCenter = new Vector2(Mathf.Sign(toCenter.x), Mathf.Sign(toCenter.y));
-            var outerCenterOnRect = corner + toCenter * outerRadiusOnRect;
-            var innerCenterOnRect = outerCenterOnRect;
+            var outerRadiusOnSprite = roundedSprite.OuterRadius;
+            var innerRadiusOnSprite = roundedSprite.InnerRadius;
+            var outerCenterOnSprite = roundedSprite.OuterCenter;
+            var innerCenterOnSprite = roundedSprite.InnerCenter;
 
-            if (toCenter.x < Mathf.Epsilon)
-            {
-                innerCenterOnRect.x = Mathf.Min(corner.x - radiusDiff, outerCenterOnRect.x);
-            }
-            else
-            {
-                innerCenterOnRect.x = Mathf.Max(corner.x + radiusDiff, outerCenterOnRect.x);
-            }
-            
-            if (toCenter.y < Mathf.Epsilon)
-            {
-                innerCenterOnRect.y = Mathf.Min(corner.y - radiusDiff, outerCenterOnRect.y);
-            }
-            else
-            {
-                innerCenterOnRect.y = Mathf.Max(corner.y + radiusDiff, outerCenterOnRect.y);
-            }
-
-            innerCenterOnRect += innerCenterOnSprite - outerCenterOnSprite;
-            
-            var baseStepCount = sliceApproximationSteps + 1;
-            var stepAngle = Mathf.PI / (2 * baseStepCount);
-            var stepCount = addEndPoints ? baseStepCount + 1 : baseStepCount;
-            
-            Debug.Log(innerCenterOnRect);
-
-            for (var i = 0; i < stepCount; i++)
+            var stepAngle = Mathf.PI / (2 * quarterData.ApproximationSteps);
+            for (var i = 0; i < quarterData.OuterVertexCount; i++)
             {
                 var angle = -i * stepAngle + startAngle;
                 var sin = Mathf.Sin(angle);
                 var cos = Mathf.Cos(angle);
                 var circlePosition = new Vector2(cos, sin);
-                vertices[indexCount + outerVertexCount] = VertexFromAngle(circlePosition, innerRadiusOnSprite, innerCenterOnSprite,
-                    innerRadiusOnRect,
-                    innerCenterOnRect, spriteSize, uv1, uv4);
-                
-                vertices[indexCount++] = VertexFromAngle(circlePosition, outerRadiusOnSprite, outerCenterOnSprite, outerRadiusOnRect,
-                    outerCenterOnRect, spriteSize, uv1, uv4);
+                vertices[indexCount + outerVertexCount] = VertexFromAngle(circlePosition, innerRadiusOnSprite,
+                    innerCenterOnSprite,
+                    quarterData.InnerRadius,
+                    quarterData.InnerCenter + position, spriteSize, uv1, uv4);
+
+                vertices[indexCount++] = VertexFromAngle(circlePosition, outerRadiusOnSprite, outerCenterOnSprite,
+                    quarterData.OuterRadius,
+                    quarterData.OuterCenter + position, spriteSize, uv1, uv4);
             }
         }
 
@@ -275,5 +280,21 @@ namespace Utkaka.ScaleNineSlicer.UI
                 UV = uv
             };
         }
+
+#if UNITY_EDITOR
+        protected override void OnValidate()
+        {
+            base.OnValidate();
+            _sliceApproximationSteps = Mathf.Max(0, _sliceApproximationSteps);
+            _bottomLeftCorner.ApproximationSteps = Mathf.Max(0, _bottomLeftCorner.ApproximationSteps);
+            _bottomLeftCorner.Radius = Mathf.Max(0, _bottomLeftCorner.Radius);
+            _topLeftCorner.ApproximationSteps = Mathf.Max(0, _topLeftCorner.ApproximationSteps);
+            _topLeftCorner.Radius = Mathf.Max(0, _topLeftCorner.Radius);
+            _topRightCorner.ApproximationSteps = Mathf.Max(0, _topRightCorner.ApproximationSteps);
+            _topRightCorner.Radius = Mathf.Max(0, _topRightCorner.Radius);
+            _bottomRightCorner.ApproximationSteps = Mathf.Max(0, _bottomRightCorner.ApproximationSteps);
+            _bottomRightCorner.Radius = Mathf.Max(0, _bottomRightCorner.Radius);
+        }
+#endif
     }
 }

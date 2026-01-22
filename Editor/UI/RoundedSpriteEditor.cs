@@ -1,22 +1,20 @@
-using System;
 using UnityEditor;
 using UnityEngine;
 using Utkaka.ScaleNineSlicer.UI;
-using Object = UnityEngine.Object;
 
 namespace Utkaka.ScaleNineSlicer.Editor.UI
 {
-    [CustomEditor(typeof(CapsuleSprite))]
-    public class CapsuleSpriteEditor : UnityEditor.Editor
+    [CustomEditor(typeof(RoundedSprite))]
+    public class RoundedSpriteEditor : UnityEditor.Editor
     {
         public override bool HasPreviewGUI()
         {
-            return (target as CapsuleSprite)?.Sprite != null;
+            return (target as RoundedSprite)?.Sprite != null;
         }
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)
         {
-            var asset = target as CapsuleSprite;
+            var asset = target as RoundedSprite;
             if (asset?.Sprite == null) return;
 
             var texture = asset.Sprite.texture;

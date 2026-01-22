@@ -20,14 +20,8 @@ namespace Utkaka.ScaleNineSlicer.UI
         }
         
         [SerializeField]
-        private bool _preserveAspect;
-        [SerializeField]
-        private bool _useSpriteMesh;
-        [SerializeField]
         private float _pixelsPerUnitMultiplier = 1.0f;
         
-        [SerializeField]
-        private bool _sliced;
         [SerializeField]
         private bool _fillCenter = true;
 
@@ -81,35 +75,11 @@ namespace Utkaka.ScaleNineSlicer.UI
             }
         }
         #endregion
-
-        #region Simple properties
-        public bool preserveAspect
-        {
-            get { return _preserveAspect; }
-            set
-            {
-                if (Utils.SetStruct(ref _preserveAspect, value)) SetVerticesDirty();
-            }
-        }
-        
-        public bool useSpriteMesh
-        {
-            get => _useSpriteMesh;
-            set
-            {
-                if (Utils.SetStruct(ref _useSpriteMesh, value)) SetVerticesDirty();
-            }
-        }
-
-        #endregion
         
         #region Sliced properties
-        public bool sliced
-        {
-            get => _sliced;
-            set { if (Utils.SetStruct(ref _sliced, value)) SetVerticesDirty(); }
-        }
-        
+
+        public abstract bool sliced { get; set; }
+
         public bool fillCenter
         {
             get => _fillCenter;
@@ -203,7 +173,7 @@ namespace Utkaka.ScaleNineSlicer.UI
             get
             {
                 if (activeSprite == null) return 0;
-                if (_sliced || _filled) return DataUtility.GetMinSize(activeSprite).x / pixelsPerUnit;
+                if (sliced || _filled) return DataUtility.GetMinSize(activeSprite).x / pixelsPerUnit;
                 return activeSprite.rect.size.x / pixelsPerUnit;
             }
         }
@@ -214,7 +184,7 @@ namespace Utkaka.ScaleNineSlicer.UI
             get
             {
                 if (activeSprite == null) return 0;
-                if (_sliced || _filled) return DataUtility.GetMinSize(activeSprite).y / pixelsPerUnit;
+                if (sliced || _filled) return DataUtility.GetMinSize(activeSprite).y / pixelsPerUnit;
                 return activeSprite.rect.size.y / pixelsPerUnit;
             }
         }
@@ -580,7 +550,7 @@ namespace Utkaka.ScaleNineSlicer.UI
             else if (!(Mathf.Abs(canvas.referencePixelsPerUnit - _cachedReferencePixelsPerUnit) <= Mathf.Epsilon))
             {
                 _cachedReferencePixelsPerUnit = canvas.referencePixelsPerUnit;
-                if (_sliced || _tiled)
+                if (sliced || _tiled)
                 {
                     SetVerticesDirty();
                     SetLayoutDirty();

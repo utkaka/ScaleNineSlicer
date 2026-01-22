@@ -11,7 +11,13 @@ namespace Utkaka.ScaleNineSlicer.UI
     {
         [SerializeField]
         private Sprite _sprite;
+        [SerializeField]
+        private bool _preserveAspect;
+        [SerializeField]
+        private bool _useSpriteMesh;
         
+        [SerializeField]
+        private bool _sliced;
         [SerializeField]
         private bool _tileScaledSlices;
         [SerializeField]
@@ -61,7 +67,33 @@ namespace Utkaka.ScaleNineSlicer.UI
         
         #endregion
         
+        #region Simple properties
+        public bool preserveAspect
+        {
+            get { return _preserveAspect; }
+            set
+            {
+                if (Utils.SetStruct(ref _preserveAspect, value)) SetVerticesDirty();
+            }
+        }
+        
+        public bool useSpriteMesh
+        {
+            get => _useSpriteMesh;
+            set
+            {
+                if (Utils.SetStruct(ref _useSpriteMesh, value)) SetVerticesDirty();
+            }
+        }
+
+        #endregion
+        
         #region Sliced properties
+        public override bool sliced
+        {
+            get => _sliced;
+            set { if (Utils.SetStruct(ref _sliced, value)) SetVerticesDirty(); }
+        }
         public bool tileScaledSlices
         {
             get => _tileScaledSlices;

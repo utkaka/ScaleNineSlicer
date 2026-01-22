@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/utkaka/ScaleNineSlicer/compare/v2.0.2...v2.1.0) (2026-01-22)
+
+
+### Features
+
+* add RoundedImage component ([40a0a67](https://github.com/utkaka/ScaleNineSlicer/commit/40a0a6735300d64b4dc10ddb29806718657b014d))
+
 ## [2.0.2](https://github.com/utkaka/ScaleNineSlicer/compare/v2.0.1...v2.0.2) (2025-12-26)
 
 
